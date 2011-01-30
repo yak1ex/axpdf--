@@ -45,7 +45,7 @@ namespace client
 				("\\f", '\f')("\\(", '(')("\\)", ')')("\\\\",'\\')
 			;
 			eol_char.add("\r\n",'\n')("\r",'\n')("\n",'\n');
-			pdf %= literal_string;
+			pdf %= literal_string | hex_string;
 			literal_string %= lit('(') >> -literal_string_ >> lit(')');
 			literal_string_ =
 				char_('(')[push_back(_val,_1)] >> -literal_string_[append(_val,_1)] >> char_(')')[push_back(_val,_1)] >> -literal_string_[append(_val,_1)] |
@@ -55,6 +55,10 @@ namespace client
 			literal_string_skip = lit("\\\r\n") | lit("\\\r") | lit("\\\n");
 			octal_char = lit('\\')[_val=0] >> octal_digit[_val=_1] >> -octal_digit[_val=_val*8+_1] >> -octal_digit[_val=_val*8+_1];
 			octal_digit = char_('0','7')[_val=_1-'0'];
+			hex_string = lit('<') >> *hex_char >> lit('>');
+			hex_char = skip(hex_skip.alias())[hex_digit[_val=_1*16] >> -hex_digit[_val+=_1]];
+			hex_digit = char_('0','9')[_val=_1-'0'] | char_('A','F')[_val=_1-'A'] | char_('a','f')[_val=_1-'a'];
+			hex_skip = char_("\x20\x09\x0d\x0a\x0c");
 
 			// Name setting
 			pdf.name("pdf");
@@ -64,6 +68,10 @@ namespace client
 			literal_string_skip.name("literal_string_skip");
 			octal_char.name("octal_char");
 			octal_digit.name("octal_digit");
+			hex_string.name("hex_string");
+			hex_char.name("hex_char");
+			hex_digit.name("hex_digit");
+			hex_skip.name("hex_skip");
 		}
 		qi::symbols<char const, char const> unesc_char;
 		qi::symbols<char const, char const> eol_char;
@@ -74,6 +82,10 @@ namespace client
 		qi::rule<Iterator> literal_string_skip;
 		qi::rule<Iterator,char()> octal_char;
 		qi::rule<Iterator,char()> octal_digit;
+		qi::rule<Iterator,std::string()> hex_string;
+		qi::rule<Iterator,char()> hex_char;
+		qi::rule<Iterator,char()> hex_digit;
+		qi::rule<Iterator,char()> hex_skip;
 	};
 	template <typename Iterator>
 	bool parse_pdf(Iterator first, Iterator last, std::string &s)

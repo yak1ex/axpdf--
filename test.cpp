@@ -53,16 +53,21 @@ namespace client
 
 			root %= string_rule;
 			string_rule = char2string_rule[append(_val,_1)] >> string_rule[append(_val,_1)] | char2string_rule;
-			char2string_rule = char_[assign(_val,1,_1)];
+			char2string_rule = qi::skip(skip_rule.alias())[char_rule[push_back(_val,_1)] >> -char_rule[push_back(_val,_1)]];
+			char_rule = char_("a-zA-Z0-9");
+			skip_rule = char_("\x20\x09\x0d\x0a\x0c");
 
 			// Name setting
 			root.name("root");
 			string_rule.name("string_rule");
 			char2string_rule.name("char2string_rule");
+			skip_rule.name("skip_rule");
 		}
 		qi::rule<Iterator,std::string()> root;
 		qi::rule<Iterator,std::string()> string_rule;
 		qi::rule<Iterator,std::string()> char2string_rule;
+		qi::rule<Iterator,char()> char_rule;
+		qi::rule<Iterator,char()> skip_rule;
 	};
 	template <typename Iterator>
 	bool parse_test(Iterator first, Iterator last, std::string &s)

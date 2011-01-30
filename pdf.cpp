@@ -6,6 +6,9 @@
 #include <boost/spirit/include/phoenix_function.hpp>
 #include <boost/spirit/include/phoenix_container.hpp>
 
+#include <boost/lexical_cast.hpp>
+#include <boost/variant.hpp>
+
 #include <iostream>
 #include <string>
 
@@ -25,6 +28,17 @@ namespace client
 			}
 		};
 		boost::phoenix::function<append_impl> append;
+		struct stringize_impl
+		{
+			template<typename A1>
+			struct result { typedef std::string type; };
+			template<typename T>
+			std::string operator()(const T& t) const
+			{
+				return boost::lexical_cast<std::string>(t);
+			}
+		};
+		boost::phoenix::function<stringize_impl> stringize;
 		pdf_parser() : pdf_parser::base_type(pdf, "pdf")
 		{
 			using qi::lit;
@@ -45,7 +59,7 @@ namespace client
 				("\\f", '\f')("\\(", '(')("\\)", ')')("\\\\",'\\')
 			;
 			eol_char.add("\r\n",'\n')("\r",'\n')("\n",'\n');
-			pdf %= literal_string | hex_string;
+			pdf %= object;
 			literal_string %= lit('(') >> -literal_string_ >> lit(')');
 			literal_string_ =
 				char_('(')[push_back(_val,_1)] >> -literal_string_[append(_val,_1)] >> char_(')')[push_back(_val,_1)] >> -literal_string_[append(_val,_1)] |
@@ -59,7 +73,12 @@ namespace client
 			hex_char = skip(hex_skip.alias())[hex_digit[_val=_1*16] >> -hex_digit[_val+=_1]];
 			hex_digit = char_('0','9')[_val=_1-'0'] | char_('A','F')[_val=_1-'A'] | char_('a','f')[_val=_1-'a'];
 			hex_skip = char_("\x20\x09\x0d\x0a\x0c");
-
+			comment = lit('%') >> *(char_ - eol_char) >> eol_char;
+			regular_char = char_ - char_('\0') - char_("\x09\x0a\x0c\x0d\x20") - char_("\x28\x29\x3c\x3e\x5b\x5d\x7b\x7d\x2f\x25");
+			name_obj = lit('/') >> *((regular_char - lit('#')) | hex_char_name);
+			hex_char_name = lit('#') >> hex_digit[_val=_1*16] >> hex_digit[_val+=_1];
+			array_obj = lit('[')[append(_val,"[")] >> *(object[append(_val,_1)] >> eps[append(_val," ")]) >> lit(']')[append(_val,"]")];
+			object = skip(hex_skip.alias())[(qi::bool_ | qi::real_parser<double, qi::strict_real_policies<double> >() | qi::int_ | literal_string | hex_string | name_obj | array_obj)[_val=stringize(_1)]];
 			// Name setting
 			pdf.name("pdf");
 			literal_string.name("literal_string");
@@ -72,6 +91,12 @@ namespace client
 			hex_char.name("hex_char");
 			hex_digit.name("hex_digit");
 			hex_skip.name("hex_skip");
+			comment.name("comment");
+			regular_char.name("regular_char");
+			name_obj.name("name_obj");
+			hex_char_name.name("hex_char_name");
+			array_obj.name("array_obj");
+			object.name("object");
 		}
 		qi::symbols<char const, char const> unesc_char;
 		qi::symbols<char const, char const> eol_char;
@@ -86,6 +111,12 @@ namespace client
 		qi::rule<Iterator,char()> hex_char;
 		qi::rule<Iterator,char()> hex_digit;
 		qi::rule<Iterator,char()> hex_skip;
+		qi::rule<Iterator> comment;
+		qi::rule<Iterator,char()> regular_char;
+		qi::rule<Iterator,std::string()> name_obj;
+		qi::rule<Iterator,char()> hex_char_name;
+		qi::rule<Iterator,std::string()> array_obj;
+		qi::rule<Iterator,std::string()> object;
 	};
 	template <typename Iterator>
 	bool parse_pdf(Iterator first, Iterator last, std::string &s)

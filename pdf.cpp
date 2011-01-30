@@ -33,6 +33,7 @@ namespace client
 			using qi::omit;
 			using qi::eoi;
 			using qi::eps;
+			using qi::skip;
 			using boost::phoenix::if_else;
 			using boost::phoenix::assign;
 			using boost::phoenix::bind;
@@ -43,13 +44,15 @@ namespace client
 				("\\n", '\n')("\\r", '\r')("\\t", '\t')("\\b", '\b')
 				("\\f", '\f')("\\(", '(')("\\)", ')')("\\\\",'\\')
 			;
+			eol_char.add("\r\n",'\n')("\r",'\n')("\n",'\n');
 			pdf %= literal_string;
 			literal_string %= lit('(') >> -literal_string_ >> lit(')');
 			literal_string_ =
 				char_('(')[push_back(_val,_1)] >> -literal_string_[append(_val,_1)] >> char_(')')[push_back(_val,_1)] >> -literal_string_[append(_val,_1)] |
 				literal_string_char[push_back(_val,_1)] >> -literal_string_[append(_val,_1)];
 			literal_string_char %= 
-				octal_char | unesc_char | lit('\\') >> char_ | char_ - char_("()");
+				skip(literal_string_skip.alias())[octal_char | unesc_char | lit('\\') >> char_ | eol_char | (char_ - char_("()"))];
+			literal_string_skip = lit("\\\r\n") | lit("\\\r") | lit("\\\n");
 			octal_char = lit('\\')[_val=0] >> octal_digit[_val=_1] >> -octal_digit[_val=_val*8+_1] >> -octal_digit[_val=_val*8+_1];
 			octal_digit = char_('0','7')[_val=_1-'0'];
 
@@ -58,14 +61,17 @@ namespace client
 			literal_string.name("literal_string");
 			literal_string_.name("literal_string_");
 			literal_string_char.name("literal_string_char");
+			literal_string_skip.name("literal_string_skip");
 			octal_char.name("octal_char");
 			octal_digit.name("octal_digit");
 		}
 		qi::symbols<char const, char const> unesc_char;
+		qi::symbols<char const, char const> eol_char;
 		qi::rule<Iterator,std::string()> pdf;
 		qi::rule<Iterator,std::string()> literal_string;
 		qi::rule<Iterator,std::string()> literal_string_;
 		qi::rule<Iterator,char()> literal_string_char;
+		qi::rule<Iterator> literal_string_skip;
 		qi::rule<Iterator,char()> octal_char;
 		qi::rule<Iterator,char()> octal_digit;
 	};
@@ -85,10 +91,15 @@ int main()
 	std::string str;
 	while (getline(std::cin, str))
 	{
-		std::string s;
+		std::string str2;
+		while (getline(std::cin, str2)) {
+			if (str2.empty()) break;
+			str += '\x0a' + str2;
+		}
 		if (str.empty() || str[0] == 'q' || str[0] == 'Q')
 			break;
 
+		std::string s;
 		if (client::parse_pdf(str.begin(), str.end(), s))
 		{
 			std::cout << "-------------------------\n";

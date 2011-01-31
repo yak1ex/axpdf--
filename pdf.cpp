@@ -77,8 +77,10 @@ namespace client
 			regular_char = char_ - char_('\0') - char_("\x09\x0a\x0c\x0d\x20") - char_("\x28\x29\x3c\x3e\x5b\x5d\x7b\x7d\x2f\x25");
 			name_obj = lit('/') >> *((regular_char - lit('#')) | hex_char_name);
 			hex_char_name = lit('#') >> hex_digit[_val=_1*16] >> hex_digit[_val+=_1];
-			array_obj = lit('[')[append(_val,"[")] >> *(object[append(_val,_1)] >> eps[append(_val," ")]) >> lit(']')[append(_val,"]")];
-			object = skip(hex_skip.alias())[(qi::bool_ | qi::real_parser<double, qi::strict_real_policies<double> >() | qi::int_ | literal_string | hex_string | name_obj | array_obj)[_val=stringize(_1)]];
+			array_obj = lit('[')[append(_val,"[")] >> *(object[append(_val,_1)] >> eps[append(_val," ")]) >> skip(hex_skip.alias())[lit(']')[append(_val,"]")]];
+			object = skip(hex_skip.alias())[(qi::bool_ | qi::real_parser<double, qi::strict_real_policies<double> >() | qi::int_ | literal_string | hex_string | name_obj | array_obj | dic_obj)[_val=stringize(_1)]];
+			dic_obj = lit("<<")[append(_val,"<<")] >> *(skip(hex_skip.alias())[name_obj[append(_val,_1)]] >> eps[append(_val," : ")] >> object[append(_val, _1)]) >> skip(hex_skip.alias())[lit(">>")[append(_val,">>")]];
+
 			// Name setting
 			pdf.name("pdf");
 			literal_string.name("literal_string");
@@ -97,6 +99,7 @@ namespace client
 			hex_char_name.name("hex_char_name");
 			array_obj.name("array_obj");
 			object.name("object");
+			dic_obj.name("dic_obj");
 		}
 		qi::symbols<char const, char const> unesc_char;
 		qi::symbols<char const, char const> eol_char;
@@ -117,6 +120,7 @@ namespace client
 		qi::rule<Iterator,char()> hex_char_name;
 		qi::rule<Iterator,std::string()> array_obj;
 		qi::rule<Iterator,std::string()> object;
+		qi::rule<Iterator,std::string()> dic_obj;
 	};
 	template <typename Iterator>
 	bool parse_pdf(Iterator first, Iterator last, std::string &s)

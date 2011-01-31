@@ -12,11 +12,18 @@
 #include <iostream>
 #include <string>
 
+#include "spirit_helper.hpp"
+
 namespace client
 {
 	namespace qi = boost::spirit::qi;
+
+	BOOST_SPIRIT_AUTO(qi, white_space, qi::char_("\x09\x0a\x0c\x0d\x20") | qi::char_('\0'));
+	BOOST_SPIRIT_AUTO(qi, comment, qi::lit('%') >> *(qi::char_ - qi::lit("\r\n") - qi::lit('\r') - qi::lit('\n')) >> (qi::lit("\r\n") | qi::lit('\r') | qi::lit('\n')));
+	BOOST_SPIRIT_AUTO(qi, skip_normal, comment | white_space);
+
 	template <typename Iterator>
-	struct pdf_parser : qi::grammar<Iterator, std::string()>
+	struct pdf_parser : qi::grammar<Iterator, std::string(), skip_normal_expr_type>
 	{
 		struct append_impl
 		{
@@ -70,16 +77,14 @@ namespace client
 			octal_char = lit('\\')[_val=0] >> octal_digit[_val=_1] >> -octal_digit[_val=_val*8+_1] >> -octal_digit[_val=_val*8+_1];
 			octal_digit = char_('0','7')[_val=_1-'0'];
 			hex_string = lit('<') >> *hex_char >> lit('>');
-			hex_char = skip(hex_skip.alias())[hex_digit[_val=_1*16] >> -hex_digit[_val+=_1]];
+			hex_char = skip(white_space)[hex_digit[_val=_1*16] >> -hex_digit[_val+=_1]];
 			hex_digit = char_('0','9')[_val=_1-'0'] | char_('A','F')[_val=_1-'A'] | char_('a','f')[_val=_1-'a'];
-			hex_skip = char_("\x20\x09\x0d\x0a\x0c");
-			comment = lit('%') >> *(char_ - eol_char) >> eol_char;
-			regular_char = char_ - char_('\0') - char_("\x09\x0a\x0c\x0d\x20") - char_("\x28\x29\x3c\x3e\x5b\x5d\x7b\x7d\x2f\x25");
+			regular_char = char_ - white_space - char_("\x28\x29\x3c\x3e\x5b\x5d\x7b\x7d\x2f\x25");
 			name_obj = lit('/') >> *((regular_char - lit('#')) | hex_char_name);
 			hex_char_name = lit('#') >> hex_digit[_val=_1*16] >> hex_digit[_val+=_1];
-			array_obj = lit('[')[append(_val,"[")] >> *(object[append(_val,_1)] >> eps[append(_val," ")]) >> skip(hex_skip.alias())[lit(']')[append(_val,"]")]];
-			object = skip(hex_skip.alias())[(qi::bool_ | qi::real_parser<double, qi::strict_real_policies<double> >() | qi::int_ | literal_string | hex_string | name_obj | array_obj | dic_obj)[_val=stringize(_1)]];
-			dic_obj = lit("<<")[append(_val,"<<")] >> *(skip(hex_skip.alias())[name_obj[append(_val,_1)]] >> eps[append(_val," : ")] >> object[append(_val, _1)]) >> skip(hex_skip.alias())[lit(">>")[append(_val,">>")]];
+			array_obj = lit('[')[append(_val,"[")] >> *(object[append(_val,_1)] >> eps[append(_val," ")]) >> lit(']')[append(_val,"]")];
+			object = (qi::bool_ | qi::real_parser<double, qi::strict_real_policies<double> >() | qi::int_ | literal_string | hex_string | name_obj | array_obj | dic_obj)[_val=stringize(_1)];
+			dic_obj = lit("<<")[append(_val,"<<")] >> *(name_obj[append(_val,_1)] >> eps[append(_val," : ")] >> object[append(_val, _1)]) >> lit(">>")[append(_val,">>")];
 
 			// Name setting
 			pdf.name("pdf");
@@ -92,8 +97,6 @@ namespace client
 			hex_string.name("hex_string");
 			hex_char.name("hex_char");
 			hex_digit.name("hex_digit");
-			hex_skip.name("hex_skip");
-			comment.name("comment");
 			regular_char.name("regular_char");
 			name_obj.name("name_obj");
 			hex_char_name.name("hex_char_name");
@@ -103,7 +106,7 @@ namespace client
 		}
 		qi::symbols<char const, char const> unesc_char;
 		qi::symbols<char const, char const> eol_char;
-		qi::rule<Iterator,std::string()> pdf;
+		qi::rule<Iterator,std::string(), skip_normal_expr_type> pdf;
 		qi::rule<Iterator,std::string()> literal_string;
 		qi::rule<Iterator,std::string()> literal_string_;
 		qi::rule<Iterator,char()> literal_string_char;
@@ -113,19 +116,17 @@ namespace client
 		qi::rule<Iterator,std::string()> hex_string;
 		qi::rule<Iterator,char()> hex_char;
 		qi::rule<Iterator,char()> hex_digit;
-		qi::rule<Iterator,char()> hex_skip;
-		qi::rule<Iterator> comment;
 		qi::rule<Iterator,char()> regular_char;
 		qi::rule<Iterator,std::string()> name_obj;
 		qi::rule<Iterator,char()> hex_char_name;
-		qi::rule<Iterator,std::string()> array_obj;
-		qi::rule<Iterator,std::string()> object;
-		qi::rule<Iterator,std::string()> dic_obj;
+		qi::rule<Iterator,std::string(), skip_normal_expr_type> array_obj;
+		qi::rule<Iterator,std::string(), skip_normal_expr_type> object;
+		qi::rule<Iterator,std::string(), skip_normal_expr_type> dic_obj;
 	};
 	template <typename Iterator>
 	bool parse_pdf(Iterator first, Iterator last, std::string &s)
 	{
-		bool r = parse(first, last, pdf_parser<Iterator>(), s);
+		bool r = phrase_parse(first, last, pdf_parser<Iterator>(), skip_normal, s);
 
 		if (!r || first != last) // fail if we did not get a full match
 			return false;

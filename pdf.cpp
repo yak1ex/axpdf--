@@ -7,15 +7,60 @@
 #include <boost/spirit/include/phoenix_container.hpp>
 
 #include <boost/lexical_cast.hpp>
-#include <boost/variant.hpp>
+#include <boost/variant/recursive_variant.hpp>
+#include <boost/fusion/include/adapt_struct.hpp>
 
 #include <iostream>
 #include <string>
+#include <vector>
+#include <map>
 
 #include "spirit_helper.hpp"
 
 namespace client
 {
+	struct name
+	{
+		std::string value;
+		name(const std::string &s) : value(s) {}
+		operator std::string() const { return value; }
+	};
+	typedef boost::make_recursive_variant<
+		bool, int, double, std::string, std::vector<char>, name,
+		boost::recursive_wrapper<std::map<name, boost::recursive_variant_> >, // dictionary
+		boost::recursive_wrapper<std::vector<boost::recursive_variant_> > // array
+	> object;
+	typedef std::map<name, object> dictionary;
+	typedef std::vector<object> array;
+	struct indirect_obj
+	{
+		int number;
+		int generation;
+		object value;
+	};
+	struct pdf_data
+	{
+		int major, minor;
+		std::vector<indirect_obj> objects;
+	};
+}
+
+BOOST_FUSION_ADAPT_STRUCT(
+	client::indirect_obj,
+	(int, number)
+	(int, generation)
+	(std::vector<client::object>, value)
+)
+BOOST_FUSION_ADAPT_STRUCT(
+	client::pdf_data,
+	(int, major)
+	(int, minor)
+	(std::vector<client::indirect_obj>, objects)
+)
+
+namespace client
+{
+
 	namespace qi = boost::spirit::qi;
 
 	BOOST_SPIRIT_AUTO(qi, white_space, qi::char_("\x09\x0a\x0c\x0d\x20") | qi::char_('\0'));

@@ -40,11 +40,12 @@ namespace client
 	{
 		return n1.value < n2.value;
 	}
+	struct null {};
 	typedef boost::make_recursive_variant<
 		bool, int, double, std::string, std::vector<char>, name,
 		std::map<name, boost::recursive_variant_>, // dictionary
 		std::vector<boost::recursive_variant_>, // array
-		indirect_ref
+		indirect_ref, null
 	>::type object;
 	typedef std::map<name, object> dictionary;
 	typedef std::vector<object> array;
@@ -123,6 +124,10 @@ namespace client
 		void operator()(const indirect_ref& r)
 		{
 			make_indent(); os << r.number << ' ' << r.generation << " R" << std::endl;
+		}
+		void operator()(const null& n)
+		{
+			make_indent(); os << "null" << std::endl;
 		}
 	};
 	void out(std::ostream &os, const object& obj, int level = 0)
@@ -218,10 +223,11 @@ namespace client
 			name_obj = lit('/') >> (*((regular_char - lit('#')) | hex_char_name))[_val = _1];
 			hex_char_name = lit('#') >> hex_digit[_val=_1*16] >> hex_digit[_val+=_1];
 			array_obj = lit('[') >> *object >> lit(']');
-			object = indirect_ref | qi::bool_ | qi::real_parser<double, qi::strict_real_policies<double> >() | qi::int_ | literal_string | hex_string | name_obj | array_obj | dic_obj;
+			object = indirect_ref | qi::bool_ | qi::real_parser<double, qi::strict_real_policies<double> >() | qi::int_ | literal_string | hex_string | name_obj | array_obj | dic_obj | null_obj;
 			dic_obj = lit("<<") >> *(name_obj >> object) >> lit(">>");
 			indirect_obj = int_ >> int_ >> lit("obj") >> object >> lit("endobj");
 			indirect_ref = int_ >> int_ >> lit('R');
+			null_obj = lit("null")[_val=null()];
 
 			// Name setting
 			pdf.name("pdf");
@@ -242,6 +248,7 @@ namespace client
 			dic_obj.name("dic_obj");
 			indirect_obj.name("indirect_obj");
 			indirect_ref.name("indirect_ref");
+			null_obj.name("null_obj");
 		}
 		qi::symbols<char const, char const> unesc_char;
 		qi::symbols<char const, char const> eol_char;
@@ -263,6 +270,7 @@ namespace client
 		qi::rule<Iterator,dictionary(), skip_normal_expr_type> dic_obj;
 		qi::rule<Iterator,client::indirect_obj(), skip_normal_expr_type> indirect_obj;
 		qi::rule<Iterator,client::indirect_obj(), skip_normal_expr_type> indirect_ref;
+		qi::rule<Iterator,client::null(), skip_normal_expr_type> null_obj;
 	};
 	template <typename Iterator>
 	bool parse_pdf(Iterator first, Iterator last, pdf_data &pd)

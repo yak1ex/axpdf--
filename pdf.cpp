@@ -131,7 +131,7 @@ namespace client
 				("\\f", '\f')("\\(", '(')("\\)", ')')("\\\\",'\\')
 			;
 			eol_char.add("\r\n",'\n')("\r",'\n')("\n",'\n');
-			pdf = lit("%PDF-") >> int_ >> lit('.') >> int_ >> *indirect_obj;
+			pdf = qi::no_skip[lit("%PDF-") >> int_ >> lit('.') >> int_ >> *qi::skip[indirect_obj]];
 			literal_string %= lit('(') >> -literal_string_ >> lit(')');
 			literal_string_ =
 				char_('(')[push_back(_val,_1)] >> -literal_string_[append(_val,_1)] >> char_(')')[push_back(_val,_1)] >> -literal_string_[append(_val,_1)] |

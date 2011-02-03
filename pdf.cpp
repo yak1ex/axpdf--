@@ -9,6 +9,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/variant/recursive_variant.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
+#include <boost/fusion/include/std_pair.hpp>
 
 #include <iostream>
 #include <string>
@@ -22,14 +23,21 @@ namespace client
 	struct name
 	{
 		std::string value;
-		name(const std::string &s) : value(s) {}
+		name& operator=(const std::vector<char> &v) {
+			value.assign(v.begin(), v.end());
+			return *this;
+		}
 		operator std::string() const { return value; }
 	};
+	bool operator<(const name& n1, const name &n2)
+	{
+		return n1.value < n2.value;
+	}
 	typedef boost::make_recursive_variant<
 		bool, int, double, std::string, std::vector<char>, name,
-		boost::recursive_wrapper<std::map<name, boost::recursive_variant_> >, // dictionary
-		boost::recursive_wrapper<std::vector<boost::recursive_variant_> > // array
-	> object;
+		std::map<name, boost::recursive_variant_>, // dictionary
+		std::vector<boost::recursive_variant_> // array
+	>::type object;
 	typedef std::map<name, object> dictionary;
 	typedef std::vector<object> array;
 	struct indirect_obj
@@ -49,7 +57,7 @@ BOOST_FUSION_ADAPT_STRUCT(
 	client::indirect_obj,
 	(int, number)
 	(int, generation)
-	(std::vector<client::object>, value)
+	(client::object, value)
 )
 BOOST_FUSION_ADAPT_STRUCT(
 	client::pdf_data,
@@ -60,6 +68,17 @@ BOOST_FUSION_ADAPT_STRUCT(
 
 namespace client
 {
+	std::ostream& operator<<(std::ostream &os, const std::vector<indirect_obj> &objs)
+	{
+		for(std::size_t i = 0; i < objs.size(); ++i) {
+			os << objs[i].number << ' ' << objs[i].generation << " obj\n    " << "\nendobj" << std::endl;
+		}
+		return os;
+	}
+	std::ostream& operator<<(std::ostream &os, const pdf_data &pd)
+	{
+		return boost::fusion::out(os, pd);
+	}
 
 	namespace qi = boost::spirit::qi;
 
@@ -68,7 +87,7 @@ namespace client
 	BOOST_SPIRIT_AUTO(qi, skip_normal, comment | white_space);
 
 	template <typename Iterator>
-	struct pdf_parser : qi::grammar<Iterator, std::string(), skip_normal_expr_type>
+	struct pdf_parser : qi::grammar<Iterator, pdf_data(), skip_normal_expr_type>
 	{
 		struct append_impl
 		{
@@ -95,6 +114,7 @@ namespace client
 		{
 			using qi::lit;
 			using qi::char_;
+			using qi::int_;
 			using qi::string;
 			using qi::omit;
 			using qi::eoi;
@@ -111,7 +131,7 @@ namespace client
 				("\\f", '\f')("\\(", '(')("\\)", ')')("\\\\",'\\')
 			;
 			eol_char.add("\r\n",'\n')("\r",'\n')("\n",'\n');
-			pdf %= object;
+			pdf = lit("%PDF-") >> int_ >> lit('.') >> int_ >> *indirect_obj;
 			literal_string %= lit('(') >> -literal_string_ >> lit(')');
 			literal_string_ =
 				char_('(')[push_back(_val,_1)] >> -literal_string_[append(_val,_1)] >> char_(')')[push_back(_val,_1)] >> -literal_string_[append(_val,_1)] |
@@ -125,11 +145,12 @@ namespace client
 			hex_char = skip(white_space)[hex_digit[_val=_1*16] >> -hex_digit[_val+=_1]];
 			hex_digit = char_('0','9')[_val=_1-'0'] | char_('A','F')[_val=_1-'A'] | char_('a','f')[_val=_1-'a'];
 			regular_char = char_ - white_space - char_("\x28\x29\x3c\x3e\x5b\x5d\x7b\x7d\x2f\x25");
-			name_obj = lit('/') >> *((regular_char - lit('#')) | hex_char_name);
+			name_obj = lit('/') >> (*((regular_char - lit('#')) | hex_char_name))[_val = _1];
 			hex_char_name = lit('#') >> hex_digit[_val=_1*16] >> hex_digit[_val+=_1];
-			array_obj = lit('[')[append(_val,"[")] >> *(object[append(_val,_1)] >> eps[append(_val," ")]) >> lit(']')[append(_val,"]")];
-			object = (qi::bool_ | qi::real_parser<double, qi::strict_real_policies<double> >() | qi::int_ | literal_string | hex_string | name_obj | array_obj | dic_obj)[_val=stringize(_1)];
-			dic_obj = lit("<<")[append(_val,"<<")] >> *(name_obj[append(_val,_1)] >> eps[append(_val," : ")] >> object[append(_val, _1)]) >> lit(">>")[append(_val,">>")];
+			array_obj = lit('[') >> *object >> lit(']');
+			object = qi::bool_ | qi::real_parser<double, qi::strict_real_policies<double> >() | qi::int_ | literal_string | hex_string | name_obj | array_obj | dic_obj;
+			dic_obj = lit("<<") >> *(name_obj >> object) >> lit(">>");
+			indirect_obj = int_ >> int_ >> lit("obj") >> object >> lit("endobj");
 
 			// Name setting
 			pdf.name("pdf");
@@ -148,30 +169,32 @@ namespace client
 			array_obj.name("array_obj");
 			object.name("object");
 			dic_obj.name("dic_obj");
+			indirect_obj.name("indirect_obj");
 		}
 		qi::symbols<char const, char const> unesc_char;
 		qi::symbols<char const, char const> eol_char;
-		qi::rule<Iterator,std::string(), skip_normal_expr_type> pdf;
+		qi::rule<Iterator,pdf_data(), skip_normal_expr_type> pdf;
 		qi::rule<Iterator,std::string()> literal_string;
 		qi::rule<Iterator,std::string()> literal_string_;
 		qi::rule<Iterator,char()> literal_string_char;
 		qi::rule<Iterator> literal_string_skip;
 		qi::rule<Iterator,char()> octal_char;
 		qi::rule<Iterator,char()> octal_digit;
-		qi::rule<Iterator,std::string()> hex_string;
+		qi::rule<Iterator,std::vector<char>()> hex_string;
 		qi::rule<Iterator,char()> hex_char;
 		qi::rule<Iterator,char()> hex_digit;
 		qi::rule<Iterator,char()> regular_char;
-		qi::rule<Iterator,std::string()> name_obj;
+		qi::rule<Iterator,name()> name_obj;
 		qi::rule<Iterator,char()> hex_char_name;
-		qi::rule<Iterator,std::string(), skip_normal_expr_type> array_obj;
-		qi::rule<Iterator,std::string(), skip_normal_expr_type> object;
-		qi::rule<Iterator,std::string(), skip_normal_expr_type> dic_obj;
+		qi::rule<Iterator,array(), skip_normal_expr_type> array_obj;
+		qi::rule<Iterator,client::object(), skip_normal_expr_type> object;
+		qi::rule<Iterator,dictionary(), skip_normal_expr_type> dic_obj;
+		qi::rule<Iterator,client::indirect_obj(), skip_normal_expr_type> indirect_obj;
 	};
 	template <typename Iterator>
-	bool parse_pdf(Iterator first, Iterator last, std::string &s)
+	bool parse_pdf(Iterator first, Iterator last, pdf_data &pd)
 	{
-		bool r = phrase_parse(first, last, pdf_parser<Iterator>(), skip_normal, s);
+		bool r = phrase_parse(first, last, pdf_parser<Iterator>(), skip_normal, pd);
 
 		if (!r || first != last) // fail if we did not get a full match
 			return false;
@@ -192,12 +215,12 @@ int main()
 		if (str.empty() || str[0] == 'q' || str[0] == 'Q')
 			break;
 
-		std::string s;
-		if (client::parse_pdf(str.begin(), str.end(), s))
+		client::pdf_data pd;
+		if (client::parse_pdf(str.begin(), str.end(), pd))
 		{
 			std::cout << "-------------------------\n";
 			std::cout << "Parsing succeeded\n";
-			std::cout << s << '\n';
+			std::cout << pd << '\n';
 			std::cout << "\n-------------------------\n";
 		}
 		else

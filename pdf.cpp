@@ -8,7 +8,7 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/variant/recursive_variant.hpp>
-#include <boost/fusion/include/adapt_struct.hpp>
+#include <boost/fusion/include/define_struct.hpp>
 #include <boost/fusion/include/std_pair.hpp>
 
 #include <iostream>
@@ -40,29 +40,20 @@ namespace client
 	>::type object;
 	typedef std::map<name, object> dictionary;
 	typedef std::vector<object> array;
-	struct indirect_obj
-	{
-		int number;
-		int generation;
-		object value;
-	};
-	struct pdf_data
-	{
-		int major, minor;
-		std::vector<indirect_obj> objects;
-	};
 }
 
-BOOST_FUSION_ADAPT_STRUCT(
-	client::indirect_obj,
+BOOST_FUSION_DEFINE_STRUCT(
+	(client),
+	indirect_obj,
 	(int, number)
 	(int, generation)
 	(client::object, value)
 )
-BOOST_FUSION_ADAPT_STRUCT(
-	client::pdf_data,
-	(int, major)
-	(int, minor)
+BOOST_FUSION_DEFINE_STRUCT(
+	(client),
+	pdf_data,
+	(int, major_ver)
+	(int, minor_ver)
 	(std::vector<client::indirect_obj>, objects)
 )
 

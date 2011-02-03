@@ -59,16 +59,83 @@ BOOST_FUSION_DEFINE_STRUCT(
 
 namespace client
 {
+	const int indent = 2;
+	struct output_visitor : public boost::static_visitor<>
+	{
+		std::ostream &os;
+		int level;
+		void make_indent()
+		{
+			for(int i = 0 ; i < level*indent; ++i) { os << ' '; }
+		}
+		void output_nibble(int n)
+		{
+			os << "0123456789ABCDEF"[n&0xF];
+		}
+		output_visitor(std::ostream &os, int level = 0) : os(os), level(level) {}
+		template<typename T>
+		void operator()(const T& t)
+		{
+			make_indent(); os << t << std::endl;
+		}
+		void operator()(const std::string &s)
+		{
+			make_indent(); os << '(' << s << ')' << std::endl;
+		}
+		void operator()(const std::vector<char>& v)
+		{
+			make_indent(); os << '<'; 
+			for(std::size_t i = 0; i < v.size(); ++i) {
+				output_nibble(v[i]); output_nibble(v[i]>>4);
+			}
+			os << '>' << std::endl;
+		}
+		void operator()(const name &n)
+		{
+			make_indent(); os << '/' << n.value << std::endl;
+		}
+		void operator()(const dictionary& m)
+		{
+			make_indent(); os << "<<" << std::endl; ++level; 
+			for(dictionary::const_iterator mi = m.begin(); mi != m.end(); ++mi)
+			{
+				make_indent(); os << '/' << mi->first.value << std::endl;
+				++level; boost::apply_visitor((*this), mi->second); --level;
+			}
+			--level; make_indent(); os << ">>" << std::endl;
+		}
+		void operator()(const array& v)
+		{
+			make_indent(); os << '[' << std::endl; ++level; 
+			for(std::size_t i = 0; i < v.size(); ++i) {
+				boost::apply_visitor((*this), v[i]);
+			}
+			--level; make_indent(); os << ']' << std::endl;
+		}
+	};
+	void out(std::ostream &os, const object& obj, int level = 0)
+	{
+		output_visitor visitor(os, level);
+		boost::apply_visitor(visitor, obj);
+	}
+	std::ostream& operator<<(std::ostream &os, const object& obj)
+	{
+		out(os, obj); return os;
+	}
 	std::ostream& operator<<(std::ostream &os, const std::vector<indirect_obj> &objs)
 	{
 		for(std::size_t i = 0; i < objs.size(); ++i) {
-			os << objs[i].number << ' ' << objs[i].generation << " obj\n    " << "\nendobj" << std::endl;
+			os << objs[i].number << ' ' << objs[i].generation << " obj" << std::endl;
+			out(os, objs[i].value, 1);
+			os << "endobj" << std::endl;
 		}
 		return os;
 	}
 	std::ostream& operator<<(std::ostream &os, const pdf_data &pd)
 	{
-		return boost::fusion::out(os, pd);
+		os << "%PDF-" << pd.major_ver << '.' << pd.minor_ver << std::endl;
+		os << pd.objects;
+		return os;
 	}
 
 	namespace qi = boost::spirit::qi;

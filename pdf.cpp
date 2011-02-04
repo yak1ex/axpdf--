@@ -30,6 +30,8 @@ namespace client
 	struct name
 	{
 		std::string value;
+		name() {}
+		name(const std::string &s) : value(s) {}
 		name& operator=(const std::vector<char> &v) {
 			value.assign(v.begin(), v.end());
 			return *this;
@@ -41,16 +43,23 @@ namespace client
 		return n1.value < n2.value;
 	}
 	struct null {};
+	struct stream;
 	typedef boost::make_recursive_variant<
 		bool, int, double, std::string, std::vector<char>, name,
 		std::map<name, boost::recursive_variant_>, // dictionary
 		std::vector<boost::recursive_variant_>, // array
-		indirect_ref, null
+		indirect_ref, null, stream
 	>::type object;
 	typedef std::map<name, object> dictionary;
 	typedef std::vector<object> array;
 }
 
+BOOST_FUSION_DEFINE_STRUCT(
+	(client),
+	stream,
+	(client::dictionary, dic)
+	(std::vector<char>, data)
+)
 BOOST_FUSION_DEFINE_STRUCT(
 	(client),
 	indirect_obj,
@@ -129,6 +138,12 @@ namespace client
 		{
 			make_indent(); os << "null" << std::endl;
 		}
+		void operator()(const stream& s)
+		{
+			(*this)(s.dic);
+			os << "stream" << std::endl;
+			os << "endstream" << std::endl;
+		}
 	};
 	void out(std::ostream &os, const object& obj, int level = 0)
 	{
@@ -174,6 +189,16 @@ namespace client
 			}
 		};
 		boost::phoenix::function<append_impl> append;
+		struct get_length_impl
+		{
+			template<typename A1>
+			struct result { typedef int type; };
+			int operator()(const dictionary& dic) const
+			{
+				return boost::get<int>(dic.find(name("Length"))->second);
+			}
+		};
+		boost::phoenix::function<get_length_impl> get_length;
 		struct stringize_impl
 		{
 			template<typename A1>
@@ -223,11 +248,13 @@ namespace client
 			name_obj = lit('/') >> (*((regular_char - lit('#')) | hex_char_name))[_val = _1];
 			hex_char_name = lit('#') >> hex_digit[_val=_1*16] >> hex_digit[_val+=_1];
 			array_obj = lit('[') >> *object >> lit(']');
-			object = indirect_ref | qi::bool_ | qi::real_parser<double, qi::strict_real_policies<double> >() | qi::int_ | literal_string | hex_string | name_obj | array_obj | dic_obj | null_obj;
+			object = indirect_ref | qi::bool_ | qi::real_parser<double, qi::strict_real_policies<double> >() | qi::int_ | literal_string | hex_string | name_obj | array_obj | stream | dic_obj | null_obj;
 			dic_obj = lit("<<") >> *(name_obj >> object) >> lit(">>");
 			indirect_obj = int_ >> int_ >> lit("obj") >> object >> lit("endobj");
 			indirect_ref = int_ >> int_ >> lit('R');
 			null_obj = lit("null")[_val=null()];
+			stream %= dic_obj[_a=_1] >> lit("stream") >> qi::no_skip[-lit('\r') >> lit('\n')] >> stream_data(_a) >> lit("endstream");
+			stream_data = repeat(get_length(_r1))[qi::byte_];
 
 			// Name setting
 			pdf.name("pdf");
@@ -249,6 +276,8 @@ namespace client
 			indirect_obj.name("indirect_obj");
 			indirect_ref.name("indirect_ref");
 			null_obj.name("null_obj");
+			stream.name("stream");
+			stream_data.name("stream_data");
 		}
 		qi::symbols<char const, char const> unesc_char;
 		qi::symbols<char const, char const> eol_char;
@@ -271,6 +300,8 @@ namespace client
 		qi::rule<Iterator,client::indirect_obj(), skip_normal_expr_type> indirect_obj;
 		qi::rule<Iterator,client::indirect_ref(), skip_normal_expr_type> indirect_ref;
 		qi::rule<Iterator,client::null(), skip_normal_expr_type> null_obj;
+		qi::rule<Iterator,client::stream(), skip_normal_expr_type, qi::locals<dictionary> > stream;
+		qi::rule<Iterator,std::vector<char>(const dictionary&)> stream_data;
 	};
 	template <typename Iterator>
 	bool parse_pdf(Iterator first, Iterator last, pdf_data &pd)

@@ -269,7 +269,7 @@ namespace client
 		qi::rule<Iterator,client::object(), skip_normal_expr_type> object;
 		qi::rule<Iterator,dictionary(), skip_normal_expr_type> dic_obj;
 		qi::rule<Iterator,client::indirect_obj(), skip_normal_expr_type> indirect_obj;
-		qi::rule<Iterator,client::indirect_obj(), skip_normal_expr_type> indirect_ref;
+		qi::rule<Iterator,client::indirect_ref(), skip_normal_expr_type> indirect_ref;
 		qi::rule<Iterator,client::null(), skip_normal_expr_type> null_obj;
 	};
 	template <typename Iterator>

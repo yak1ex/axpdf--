@@ -167,7 +167,8 @@ namespace client
 	std::ostream& operator<<(std::ostream &os, const pdf_data &pd)
 	{
 		os << "%PDF-" << pd.major_ver << '.' << pd.minor_ver << std::endl;
-		os << pd.objects << "trailer" << std::endl;
+		os << pd.objects;
+		os << "trailer" << std::endl;
 		output_visitor(os, 0)(pd.trailer_dic);
 		return os;
 	}
@@ -233,7 +234,7 @@ namespace client
 				("\\f", '\f')("\\(", '(')("\\)", ')')("\\\\",'\\')
 			;
 			eol_char.add("\r\n",'\n')("\r",'\n')("\n",'\n');
-			pdf = qi::no_skip[lit("%PDF-") >> int_ >> lit('.') >> int_ >> *qi::skip[indirect_obj] >> -qi::skip[xref_section] >> qi::skip[trailer]];
+			pdf = qi::no_skip[lit("%PDF-") >> int_ >> lit('.') >> int_ >> *qi::skip[indirect_obj] >> -qi::skip[xref_section] >> qi::skip[-trailer_dic >> trailer]];
 			literal_string %= lit('(') >> -literal_string_ >> lit(')');
 			literal_string_ =
 				char_('(')[push_back(_val,_1)] >> -literal_string_[append(_val,_1)] >> char_(')')[push_back(_val,_1)] >> -literal_string_[append(_val,_1)] |
@@ -260,7 +261,8 @@ namespace client
 			xref_section = lit("xref") >> *xref_subsection;
 			xref_subsection = int_ >> int_[_a = _1] >> repeat(_a)[xref_entry];
 			xref_entry = int_ >> int_ >> char_;
-			trailer = lit("trailer") >> dic_obj >> lit("startxref") >> omit[int_] >> lit("%%EOF");
+			trailer_dic = lit("trailer") >> dic_obj;
+			trailer = lit("startxref") >> int_ >> qi::skip(white_space)[lit("%%EOF")];
 
 			// Name setting
 			pdf.name("pdf");
@@ -287,6 +289,7 @@ namespace client
 			xref_section.name("xref_section");
 			xref_subsection.name("xref_subsection");
 			xref_entry.name("xref_entry");
+			trailer_dic.name("trailer_dic");
 			trailer.name("trailer");
 		}
 		qi::symbols<char const, char const> unesc_char;
@@ -315,7 +318,8 @@ namespace client
 		qi::rule<Iterator, void(), skip_normal_expr_type> xref_section;
 		qi::rule<Iterator, skip_normal_expr_type, qi::locals<int> > xref_subsection;
 		qi::rule<Iterator, skip_normal_expr_type> xref_entry;
-		qi::rule<Iterator, client::dictionary(), skip_normal_expr_type> trailer;
+		qi::rule<Iterator, client::dictionary(), skip_normal_expr_type> trailer_dic;
+		qi::rule<Iterator, skip_normal_expr_type> trailer;
 	};
 	template <typename Iterator>
 	bool parse_pdf(Iterator first, Iterator last, pdf_data &pd)

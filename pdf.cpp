@@ -1,5 +1,6 @@
 #include <boost/config/warning_disable.hpp>
 #include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/qi_match.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/phoenix_bind.hpp>
@@ -12,6 +13,7 @@
 #include <boost/fusion/include/std_pair.hpp>
 
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <vector>
 #include <map>
@@ -330,9 +332,23 @@ namespace client
 			return false;
 		return r;
 	}
+	bool parse_pdf_file(const std::string &name, pdf_data &pd)
+	{
+		std::ifstream ifs(name.c_str());
+		typedef boost::spirit::istream_iterator Iterator;
+
+		ifs.unsetf(std::ios::skipws);
+		ifs >> phrase_match(pdf_parser<Iterator>(), skip_normal, pd);
+		ifs.setf(std::ios::skipws);
+
+		char c;
+		if (!ifs || ifs >> c) // fail if we did not get a full match
+			return false;
+		return true;
+	}
 }
 
-int main()
+void rpl()
 {
 	std::string str;
 	while (getline(std::cin, str))
@@ -362,5 +378,24 @@ int main()
 	}
 
 	std::cout << "Bye... :-) \n\n";
+}
+
+int main(int argc, char **argv)
+{
+	if(argc > 1) {
+		client::pdf_data pd;
+		if(parse_pdf_file(argv[1], pd)) {
+			std::cout << "-------------------------\n";
+			std::cout << "Parsing succeeded\n";
+			std::cout << pd << '\n';
+			std::cout << "\n-------------------------\n";
+		} else {
+			std::cout << "-------------------------\n";
+			std::cout << "Parsing failed\n";
+			std::cout << "-------------------------\n";
+		}
+	} else {
+		rpl();
+	}
 	return 0;
 }

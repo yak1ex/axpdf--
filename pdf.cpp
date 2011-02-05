@@ -73,6 +73,7 @@ BOOST_FUSION_DEFINE_STRUCT(
 	(int, major_ver)
 	(int, minor_ver)
 	(std::vector<client::indirect_obj>, objects)
+	(client::dictionary, trailer_dic)
 )
 
 namespace client
@@ -166,7 +167,8 @@ namespace client
 	std::ostream& operator<<(std::ostream &os, const pdf_data &pd)
 	{
 		os << "%PDF-" << pd.major_ver << '.' << pd.minor_ver << std::endl;
-		os << pd.objects;
+		os << pd.objects << "trailer" << std::endl;
+		output_visitor(os, 0)(pd.trailer_dic);
 		return os;
 	}
 
@@ -231,7 +233,7 @@ namespace client
 				("\\f", '\f')("\\(", '(')("\\)", ')')("\\\\",'\\')
 			;
 			eol_char.add("\r\n",'\n')("\r",'\n')("\n",'\n');
-			pdf = qi::no_skip[lit("%PDF-") >> int_ >> lit('.') >> int_ >> *qi::skip[indirect_obj]];
+			pdf = qi::no_skip[lit("%PDF-") >> int_ >> lit('.') >> int_ >> *qi::skip[indirect_obj] >> -qi::skip[xref_section] >> qi::skip[trailer]];
 			literal_string %= lit('(') >> -literal_string_ >> lit(')');
 			literal_string_ =
 				char_('(')[push_back(_val,_1)] >> -literal_string_[append(_val,_1)] >> char_(')')[push_back(_val,_1)] >> -literal_string_[append(_val,_1)] |
@@ -254,7 +256,11 @@ namespace client
 			indirect_ref = int_ >> int_ >> lit('R');
 			null_obj = lit("null")[_val=null()];
 			stream %= dic_obj[_a=_1] >> lit("stream") >> qi::no_skip[-lit('\r') >> lit('\n')] >> stream_data(_a) >> lit("endstream");
-			stream_data = repeat(get_length(_r1))[qi::byte_];
+			stream_data = qi::no_skip[repeat(get_length(_r1))[qi::byte_]];
+			xref_section = lit("xref") >> *xref_subsection;
+			xref_subsection = int_ >> int_[_a = _1] >> repeat(_a)[xref_entry];
+			xref_entry = int_ >> int_ >> char_;
+			trailer = lit("trailer") >> dic_obj >> lit("startxref") >> omit[int_] >> lit("%%EOF");
 
 			// Name setting
 			pdf.name("pdf");
@@ -278,6 +284,10 @@ namespace client
 			null_obj.name("null_obj");
 			stream.name("stream");
 			stream_data.name("stream_data");
+			xref_section.name("xref_section");
+			xref_subsection.name("xref_subsection");
+			xref_entry.name("xref_entry");
+			trailer.name("trailer");
 		}
 		qi::symbols<char const, char const> unesc_char;
 		qi::symbols<char const, char const> eol_char;
@@ -302,6 +312,10 @@ namespace client
 		qi::rule<Iterator,client::null(), skip_normal_expr_type> null_obj;
 		qi::rule<Iterator,client::stream(), skip_normal_expr_type, qi::locals<dictionary> > stream;
 		qi::rule<Iterator,std::vector<char>(const dictionary&)> stream_data;
+		qi::rule<Iterator, void(), skip_normal_expr_type> xref_section;
+		qi::rule<Iterator, skip_normal_expr_type, qi::locals<int> > xref_subsection;
+		qi::rule<Iterator, skip_normal_expr_type> xref_entry;
+		qi::rule<Iterator, client::dictionary(), skip_normal_expr_type> trailer;
 	};
 	template <typename Iterator>
 	bool parse_pdf(Iterator first, Iterator last, pdf_data &pd)

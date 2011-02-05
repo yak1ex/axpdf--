@@ -6,6 +6,7 @@
 #include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_function.hpp>
 #include <boost/spirit/include/phoenix_container.hpp>
+#include <boost/spirit/home/qi/nonterminal/debug_handler.hpp>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/variant/recursive_variant.hpp>
@@ -44,7 +45,15 @@ namespace client
 	{
 		return n1.value < n2.value;
 	}
+	std::ostream& operator<<(std::ostream& os, const name &n)
+	{
+		os << '/' << n.value; return os;
+	}
 	struct null {};
+	std::ostream& operator<<(std::ostream& os, const null &n)
+	{
+		os << "null"; return os;
+	}
 	struct stream;
 	typedef boost::make_recursive_variant<
 		bool, int, double, std::string, std::vector<char>, name,
@@ -110,10 +119,6 @@ namespace client
 				output_nibble(v[i]); output_nibble(v[i]>>4);
 			}
 			os << '>' << std::endl;
-		}
-		void operator()(const name &n)
-		{
-			make_indent(); os << '/' << n.value << std::endl;
 		}
 		void operator()(const dictionary& m)
 		{
@@ -293,6 +298,8 @@ namespace client
 			xref_entry.name("xref_entry");
 			trailer_dic.name("trailer_dic");
 			trailer.name("trailer");
+
+//			debug(pdf);
 		}
 		qi::symbols<char const, char const> unesc_char;
 		qi::symbols<char const, char const> eol_char;

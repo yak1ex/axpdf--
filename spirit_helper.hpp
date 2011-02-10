@@ -46,7 +46,6 @@ namespace yak { namespace spirit {
 			Context &context, Skipper const &skipper, Attribute &attribute) const
 		{
 			using namespace boost::spirit;
-			qi::skip_over(first, last, skipper);
 
 			typedef typename traits::container_value<Attribute>::type value_type;
 			std::vector<value_type> temp;

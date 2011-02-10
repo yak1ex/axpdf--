@@ -4,12 +4,17 @@
 #include <boost/spirit/include/phoenix_function.hpp>
 #include <boost/spirit/include/phoenix_container.hpp>
 
+#include <boost/typeof/typeof.hpp>
+
 #include <iostream>
 #include <string>
+
+#include "spirit_helper.hpp"
 
 namespace client
 {
 	namespace qi = boost::spirit::qi;
+
 	template <typename Iterator>
 	struct test_parser : qi::grammar<Iterator, std::string()>
 	{
@@ -42,32 +47,14 @@ namespace client
 		boost::phoenix::function<nop_impl> nop;
 		test_parser() : test_parser::base_type(root, "test")
 		{
-			using qi::char_;
-			using qi::eps;
-			using boost::phoenix::push_back;
-			using boost::phoenix::assign;
-			using boost::phoenix::insert;
-			using boost::phoenix::begin;
-			using boost::phoenix::end;
 			using namespace qi::labels;
 
-			root %= string_rule;
-			string_rule = char2string_rule[append(_val,_1)] >> string_rule[append(_val,_1)] | char2string_rule;
-			char2string_rule = qi::skip(skip_rule.alias())[char_rule[push_back(_val,_1)] >> -char_rule[push_back(_val,_1)]];
-			char_rule = char_("a-zA-Z0-9");
-			skip_rule = char_("\x20\x09\x0d\x0a\x0c");
+			root = qi::lit("stream") >> yak::spirit::delimited(std::string("endstream"))[qi::char_];
 
 			// Name setting
 			root.name("root");
-			string_rule.name("string_rule");
-			char2string_rule.name("char2string_rule");
-			skip_rule.name("skip_rule");
 		}
 		qi::rule<Iterator,std::string()> root;
-		qi::rule<Iterator,std::string()> string_rule;
-		qi::rule<Iterator,std::string()> char2string_rule;
-		qi::rule<Iterator,char()> char_rule;
-		qi::rule<Iterator,char()> skip_rule;
 	};
 	template <typename Iterator>
 	bool parse_test(Iterator first, Iterator last, std::string &s)

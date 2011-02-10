@@ -49,7 +49,7 @@ namespace client
 		{
 			using namespace qi::labels;
 
-			root = qi::lit("stream") >> yak::spirit::delimited(std::string("endstream"))[qi::char_];
+			root = qi::lit("stream") >> yak::spirit::delimited(std::string("abcabd"))[qi::char_];
 
 			// Name setting
 			root.name("root");

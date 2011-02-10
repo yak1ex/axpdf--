@@ -61,12 +61,14 @@ namespace yak { namespace spirit {
 
 			iterator_type anchor_ = first_;
 			while(cur_ != last_) {
-				++cur_;
-				while(cur_ != last_ && anchor_ != last_ && *anchor_++ == *cur_++) {
-					
+				++cur_; pos.push_back(idx); idx = 0;
+				while(cur_ != last_ && anchor_ != last_ && *anchor_ == *cur_) {
+					++anchor_; ++cur_; ++idx; pos.push_back(0);
 				}
+				anchor_ = first_;
 			}
 
+			idx = 0; cur_ = first_;
 			while(first != last && cur_ != last_) {
 				if(subject.parse(first, last, context, skipper, temp_val)) {
 					while(1) {
@@ -92,7 +94,7 @@ namespace yak { namespace spirit {
 					return false;
 				}
 			}
-			if(cur_ == last) {
+			if(cur_ == last_) {
 				BOOST_FOREACH(value_type const& v, temp)
 				{
 					traits::push_back(attribute, v);

@@ -16,7 +16,7 @@ namespace client
 	namespace qi = boost::spirit::qi;
 
 	template <typename Iterator>
-	struct test_parser : qi::grammar<Iterator, std::string()>
+	struct test_parser : qi::grammar<Iterator, std::vector<int>(), qi::space_type>
 	{
 		struct output_impl
 		{
@@ -48,18 +48,22 @@ namespace client
 		test_parser() : test_parser::base_type(root, "test")
 		{
 			using namespace qi::labels;
+			std::vector<int> v;
+			v.push_back(0);
+			v.push_back(0);
+			v.push_back(0);
 
-			root = qi::lit("stream") >> yak::spirit::delimited(std::string("abcabd"))[qi::char_];
+			root = yak::spirit::delimited(v)[qi::int_];
 
 			// Name setting
 			root.name("root");
 		}
-		qi::rule<Iterator,std::string()> root;
+		qi::rule<Iterator,std::vector<int>(),qi::space_type> root;
 	};
 	template <typename Iterator>
-	bool parse_test(Iterator first, Iterator last, std::string &s)
+	bool parse_test(Iterator first, Iterator last, std::vector<int> &s)
 	{
-		bool r = parse(first, last, test_parser<Iterator>(), s);
+		bool r = phrase_parse(first, last, test_parser<Iterator>(), qi::space, s);
 
 		if (!r || first != last) // fail if we did not get a full match
 			return false;
@@ -72,15 +76,18 @@ int main()
 	std::string str;
 	while (getline(std::cin, str))
 	{
-		std::string s;
+		std::vector<int> v;
 		if (str.empty() || str[0] == 'q' || str[0] == 'Q')
 			break;
 
-		if (client::parse_test(str.begin(), str.end(), s))
+		if (client::parse_test(str.begin(), str.end(), v))
 		{
 			std::cout << "-------------------------\n";
 			std::cout << "Parsing succeeded\n";
-			std::cout << s << '\n';
+			for(std::size_t i = 0; i < v.size(); ++i) {
+				std::cout << v[i] << ' ';
+			}
+			std::cout << std::endl;
 			std::cout << "\n-------------------------\n";
 		}
 		else

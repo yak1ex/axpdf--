@@ -142,6 +142,10 @@ namespace boost { namespace spirit {
 	struct use_directive<qi::domain,
 		terminal_ex<yak::spirit::tag::delimited, fusion::vector1<Delimiter> > > : mpl::true_ {};
 
+	template<>
+	struct use_lazy_directive<qi::domain, yak::spirit::tag::delimited, 1 // arity
+	> : mpl::true_ {};
+
 }}
 
 namespace boost { namespace spirit { namespace traits

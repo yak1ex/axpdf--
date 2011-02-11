@@ -209,6 +209,17 @@ namespace client
 			}
 		};
 		boost::phoenix::function<get_length_impl> get_length;
+		struct has_valid_length_impl
+		{
+			template<typename A1>
+			struct result { typedef bool type; };
+			bool operator()(const dictionary& dic) const
+			{
+				dictionary::const_iterator iter = dic.find(name("Length"));
+				return iter != dic.end() && boost::get<int>(&(iter->second));
+			}
+		};
+		boost::phoenix::function<has_valid_length_impl> has_valid_length;
 		struct stringize_impl
 		{
 			template<typename A1>
@@ -263,8 +274,9 @@ namespace client
 			indirect_obj = int_ >> int_ >> lit("obj") >> object >> lit("endobj");
 			indirect_ref = int_ >> int_ >> lit('R');
 			null_obj = lit("null")[_val=null()];
-			stream %= dic_obj[_a=_1] >> lit("stream") >> qi::no_skip[-lit('\r') >> lit('\n')] >> stream_data(_a) >> lit("endstream");
-			stream_data = qi::no_skip[repeat(get_length(_r1))[qi::byte_]];
+			stream %= dic_obj[_a=_1] >> lit("stream") >> qi::no_skip[-lit('\r') >> lit('\n')] >> qi::lazy(boost::phoenix::if_else(has_valid_length(_a), stream_data(_a), stream_data_wo_length(_a)));
+			stream_data = qi::no_skip[repeat(get_length(_r1))[qi::byte_]] >> (lit('\r') || lit('\n')) >> lit("endstream");
+			stream_data_wo_length = qi::no_skip[yak::spirit::delimited(std::string("endstream"))[qi::byte_]];
 			xref_section = lit("xref") >> *xref_subsection;
 			xref_subsection = int_ >> int_[_a = _1] >> repeat(_a)[xref_entry];
 			xref_entry = int_ >> int_ >> char_;
@@ -293,6 +305,7 @@ namespace client
 			null_obj.name("null_obj");
 			stream.name("stream");
 			stream_data.name("stream_data");
+			stream_data_wo_length.name("stream_data_wo_length");
 			xref_section.name("xref_section");
 			xref_subsection.name("xref_subsection");
 			xref_entry.name("xref_entry");
@@ -324,6 +337,7 @@ namespace client
 		qi::rule<Iterator,client::null(), skip_normal_expr_type> null_obj;
 		qi::rule<Iterator,client::stream(), skip_normal_expr_type, qi::locals<dictionary> > stream;
 		qi::rule<Iterator,std::vector<char>(const dictionary&)> stream_data;
+		qi::rule<Iterator,std::vector<char>(const dictionary&)> stream_data_wo_length;
 		qi::rule<Iterator, void(), skip_normal_expr_type> xref_section;
 		qi::rule<Iterator, skip_normal_expr_type, qi::locals<int> > xref_subsection;
 		qi::rule<Iterator, skip_normal_expr_type> xref_entry;

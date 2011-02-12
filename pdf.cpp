@@ -12,6 +12,8 @@
 #include <boost/variant/recursive_variant.hpp>
 #include <boost/fusion/include/define_struct.hpp>
 #include <boost/fusion/include/std_pair.hpp>
+#include <boost/interprocess/file_mapping.hpp>
+#include <boost/interprocess/mapped_region.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -355,17 +357,16 @@ namespace client
 	}
 	bool parse_pdf_file(const std::string &name, pdf_data &pd)
 	{
-		std::ifstream ifs(name.c_str());
-		typedef boost::spirit::istream_iterator Iterator;
+		using namespace boost::interprocess;
 
-		ifs.unsetf(std::ios::skipws);
-		ifs >> phrase_match(pdf_parser<Iterator>(), skip_normal, pd);
-		ifs.setf(std::ios::skipws);
+		file_mapping fm(name.c_str(), read_only);
+		mapped_region region(fm, read_only);
 
-		char c;
-		if (!ifs || ifs >> c) // fail if we did not get a full match
-			return false;
-		return true;
+		char* first = static_cast<char*>(region.get_address());
+		std::size_t size = region.get_size();
+		char* last = first + size;
+
+		return parse_pdf(first, last, pd);
 	}
 }
 

@@ -7,6 +7,7 @@
 #include <boost/spirit/include/support_container.hpp>
 #include <boost/typeof/typeof.hpp>
 #include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
 
 #ifndef BOOST_SPIRIT_AUTO
 // Extracted from http://svn.boost.org/svn/boost/trunk/libs/spirit/example/qi/typeof.cpp@68572
@@ -18,6 +19,33 @@
     BOOST_AUTO(name, boost::proto::deep_copy(expr));                            \
 
 #endif /* BOOST_SPIRIT_AUTO */
+
+namespace yak { namespace spirit {
+
+	struct append_impl
+	{
+		template<typename A1, typename A2>
+		struct result { typedef void type; };
+		void operator()(std::string &s1, const std::string &s2) const
+		{
+			s1.append(s2);
+		}
+	};
+	boost::phoenix::function<append_impl> append;
+
+	struct stringize_impl
+	{
+		template<typename A1>
+		struct result { typedef std::string type; };
+		template<typename T>
+		std::string operator()(const T& t) const
+		{
+			return boost::lexical_cast<std::string>(t);
+		}
+	};
+	boost::phoenix::function<stringize_impl> stringize;
+
+}}
 
 namespace yak { namespace spirit {
 

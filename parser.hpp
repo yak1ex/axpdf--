@@ -228,10 +228,10 @@ namespace yak { namespace pdf {
 			using yak::spirit::append;
 
 			unesc_char.add
-				("\\n", '\n')("\\r", '\r')("\\t", '\t')("\\b", '\b')
-				("\\f", '\f')("\\(", '(')("\\)", ')')("\\\\",'\\')
+				((char*)"\\n", '\n')((char*)"\\r", '\r')((char*)"\\t", '\t')((char*)"\\b", '\b')
+				((char*)"\\f", '\f')((char*)"\\(", '(')((char*)"\\)", ')')((char*)"\\\\",'\\')
 			;
-			eol_char.add("\r\n",'\n')("\r",'\n')("\n",'\n');
+			eol_char.add((char*)"\r\n",'\n')((char*)"\r",'\n')((char*)"\n",'\n');
 			pdf = no_skip[lit("%PDF-") >> int_ >> lit('.') >> int_ >> *skip[indirect_obj] >> -skip[xref_section] >> skip[-trailer_dic >> trailer]];
 			literal_string %= lit('(') >> -literal_string_ >> lit(')');
 			literal_string_ =
@@ -327,7 +327,8 @@ namespace yak { namespace pdf {
 	template <typename Iterator>
 	bool parse_pdf(Iterator first, Iterator last, pdf_data &pd)
 	{
-		bool r = phrase_parse(first, last, pdf_parser<Iterator>(), skip_normal, pd);
+		pdf_parser<Iterator> g;
+		bool r = phrase_parse(first, last, g, skip_normal, pd);
 
 		if (!r || first != last) // fail if we did not get a full match
 			return false;

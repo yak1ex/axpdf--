@@ -160,7 +160,7 @@ ods << "GetArchiveInfoImp(" << std::string(buf, std::min<DWORD>(len, 1024)) << '
 		ods << "GetArchiveInfoImp - Filename specified" << std::endl;
 		Key key(make_key(filename));
 		if(g_cache.count(key) != 0) {
-			SetArchiveInfo(g_cache[key].first, lphInf);
+			if(lphInf) SetArchiveInfo(g_cache[key].first, lphInf);
 			return SPI_ERR_NO_ERROR;
 		}
 	}

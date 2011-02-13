@@ -1,10 +1,10 @@
 #CXX = i686-w64-mingw32-g++
 #CXXFLAGS = -Wall -O2 -I /var/tmp/boost_1_45_0
 
-#CXX = g++-3
-#CXXFLAGS = -mno-cygwin -Wall -O2 -I /var/tmp/boost_1_45_0
+CXX = g++-3
+CXXFLAGS = -mno-cygwin -Wall -O2 -I /var/tmp/boost_1_45_0
 
-CXXFLAGS = -Wall -O2 -I /var/tmp/boost_1_45_0
+#CXXFLAGS = -Wall -O2 -I /var/tmp/boost_1_45_0
 
 all: axpdf--.spi pdf.exe test.exe test2.exe
 

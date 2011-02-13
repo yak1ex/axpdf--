@@ -68,7 +68,6 @@ namespace yak { namespace pdf {
 		indirect_ref, null, stream
 	>::type object;
 	typedef std::map<name, object> dictionary;
-	typedef std::vector<object> array;
 }}
 
 BOOST_FUSION_DEFINE_STRUCT(
@@ -92,6 +91,24 @@ BOOST_FUSION_DEFINE_STRUCT(
 	(std::vector<yak::pdf::indirect_obj>, objects)
 	(yak::pdf::dictionary, trailer_dic)
 )
+
+namespace yak { namespace pdf {
+
+	template<typename T>
+	bool is_type(const object &obj)
+	{
+		return boost::get<T>(&obj);
+	}
+	template<typename T>
+	bool has_value(const dictionary &dic, const name &n, const T& t)
+	{
+		return dic.count(n) &&
+			boost::get<T>(&dic.find(n)->second) &&
+			boost::get<T>(dic.find(n)->second) == t;
+	}
+	typedef std::vector<object> array;
+
+}}
 
 namespace yak { namespace pdf {
 

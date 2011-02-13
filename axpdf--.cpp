@@ -92,41 +92,29 @@ static INT SetArchiveInfo(const std::vector<SPI_FILEINFO> &v, HLOCAL *lphInf)
 	return SPI_ERR_NO_ERROR;
 }
 
-template<typename T>
-static bool is(const yak::pdf::object &obj)
-{
-	return boost::get<T>(&obj);
-}
-
-template<typename T>
-static bool has(const yak::pdf::dictionary &dic, const yak::pdf::name &n, const T& t)
-{
-	return dic.count(n) &&
-		boost::get<T>(&dic.find(n)->second) &&
-		boost::get<T>(dic.find(n)->second) == t;
-}
-
 static INT CreateArchiveInfo(std::vector<SPI_FILEINFO> &v1, std::vector<Data> &v2, const yak::pdf::pdf_data &pd)
 {
 	using yak::pdf::name;
 	using yak::pdf::indirect_ref;
 	using yak::pdf::dictionary;
 	using yak::pdf::stream;
+	using yak::pdf::is_type;
+	using yak::pdf::has_value;
 
 	DWORD idx = 0;
 	v1.clear(); v2.clear();
 	typedef std::vector<yak::pdf::indirect_obj>::const_iterator iterator;
 	for(iterator i = pd.objects.begin(); i != pd.objects.end(); ++i) {
-		if(is<stream>(i->value)) {
+		if(is_type<stream>(i->value)) {
 			const stream &s = boost::get<stream>(i->value);
-			if(has(s.dic, name("Type"), name("XObject")) &&
-				has(s.dic, name("Subtype"), name("Image")) &&
-				has(s.dic, name("Filter"), name("DCTDecode"))) {
+			if(has_value(s.dic, name("Type"), name("XObject")) &&
+				has_value(s.dic, name("Subtype"), name("Image")) &&
+				has_value(s.dic, name("Filter"), name("DCTDecode"))) {
 				int length = 0;
 				const yak::pdf::object &obj = s.dic.find(name("Length"))->second;
-				if(is<int>(obj)) {
+				if(is_type<int>(obj)) {
 					length = boost::get<int>(obj);
-				} else if(is<indirect_ref>(obj)) {
+				} else if(is_type<indirect_ref>(obj)) {
 					indirect_ref r = boost::get<indirect_ref>(obj);
 					for(iterator j = pd.objects.begin(); j != pd.objects.end(); ++j) {
 						if(j->number == r.number && j->generation == r.generation) {

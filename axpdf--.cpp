@@ -9,6 +9,7 @@
 
 #include "parser.hpp"
 #include "Spi_api.h"
+#define DEBUG
 #include "odstream.hpp"
 
 using yak::debug::ods;
@@ -260,16 +261,20 @@ INT PASCAL GetFile(LPSTR buf, LONG len, LPSTR dest, UINT flag, FARPROC prgressCa
 		break;
 	}
 	if(GetArchiveInfo(buf, len, flag&7, 0) == SPI_ERR_NO_ERROR) {
+		ods << "GetFile(): GetArvhiveInfo() returned" << std::endl;
 		Key key(make_key(buf));
 		if(g_cache.count(key) == 0) {
+			ods << "GetFile(): " << buf << " not cached" << std::endl;
 			return SPI_ERR_INTERNAL_ERROR;
 		}
 		Value &value = g_cache[key];
 		std::size_t size = value.first.size();
 		for(std::size_t i = 0; i < size; ++i) {
 			if(value.first[i].position == std::size_t(len)) {
+				ods << "GetFile(): position found" << std::endl;
 				if((flag>>8) & 7) { // memory
 					if(dest) {
+						ods << "GetFile(): size: " << value.second[i].size() << " head: " << value.second[i][0] << value.second[i][1] << value.second[i][2] << value.second[i][3] << std::endl;
 						HANDLE *phResult = reinterpret_cast<HANDLE*>(dest);
 						*phResult = LocalAlloc(LMEM_MOVEABLE, value.second[i].size());
 						void* p = LocalLock(*phResult);
@@ -290,5 +295,6 @@ INT PASCAL GetFile(LPSTR buf, LONG len, LPSTR dest, UINT flag, FARPROC prgressCa
 			}
 		}
 	}
+	ods << "GetFile(): position not found" << std::endl;
 	return SPI_ERR_INTERNAL_ERROR;
 }

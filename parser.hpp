@@ -103,7 +103,7 @@ namespace yak { namespace pdf {
 	template<typename T>
 	bool is_type(const object &obj)
 	{
-		return boost::get<T>(&obj);
+		return boost::get<T>(&obj) != 0;
 	}
 	template<typename T>
 	bool has_value(const dictionary &dic, const name &n, const T& t)

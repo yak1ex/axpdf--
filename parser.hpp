@@ -228,7 +228,7 @@ namespace yak { namespace pdf {
 	BOOST_SPIRIT_AUTO(qi, skip_normal, comment | white_space);
 
 	template <typename Iterator>
-	struct pdf_parser : qi::grammar<Iterator, pdf_data(), skip_normal_expr_type>
+	struct object_parser : qi::grammar<Iterator, yak::pdf::object(), skip_normal_expr_type>
 	{
 		struct get_length_impl
 		{
@@ -251,7 +251,8 @@ namespace yak { namespace pdf {
 			}
 		};
 		boost::phoenix::function<has_valid_length_impl> has_valid_length;
-		pdf_parser() : pdf_parser::base_type(pdf, "pdf")
+
+		object_parser() : object_parser::base_type(object, "object")
 		{
 			using qi::lit;
 			using qi::char_;
@@ -267,7 +268,6 @@ namespace yak { namespace pdf {
 				((char*)"\\f", '\f')((char*)"\\(", '(')((char*)"\\)", ')')((char*)"\\\\",'\\')
 			;
 			eol_char.add((char*)"\r\n",'\n')((char*)"\r",'\n')((char*)"\n",'\n');
-			pdf = no_skip[lit("%PDF-") >> int_ >> lit('.') >> int_ >> *skip[indirect_obj] >> -skip[xref_section] >> skip[-trailer_dic >> trailer]];
 			literal_string %= lit('(') >> -literal_string_ >> lit(')');
 			literal_string_ =
 				char_('(')[push_back(_val,_1)] >> -literal_string_[append(_val,_1)] >> char_(')')[push_back(_val,_1)] >> -literal_string_[append(_val,_1)] |
@@ -286,20 +286,13 @@ namespace yak { namespace pdf {
 			array_obj = lit('[') >> *object >> lit(']');
 			object = indirect_ref | qi::bool_ | qi::real_parser<double, qi::strict_real_policies<double> >() | int_ | literal_string | hex_string | name_obj | array_obj | stream | dic_obj | null_obj;
 			dic_obj = lit("<<") >> *(name_obj >> object) >> lit(">>");
-			indirect_obj = int_ >> int_ >> lit("obj") >> object >> lit("endobj");
 			indirect_ref = int_ >> int_ >> lit('R');
 			null_obj = lit("null")[_val=null()];
 			stream %= dic_obj[_a=_1] >> lit("stream") >> no_skip[-lit('\r') >> lit('\n')] >> qi::lazy(boost::phoenix::if_else(has_valid_length(_a), stream_data(_a), stream_data_wo_length(_a)));
 			stream_data = no_skip[qi::repeat(get_length(_r1))[qi::byte_]] >> (lit('\r') || lit('\n')) >> lit("endstream");
 			stream_data_wo_length = no_skip[yak::spirit::delimited(std::string("endstream"))[qi::byte_]];
-			xref_section = lit("xref") >> *xref_subsection;
-			xref_subsection = int_ >> int_[_a = _1] >> qi::repeat(_a)[xref_entry];
-			xref_entry = int_ >> int_ >> char_;
-			trailer_dic = lit("trailer") >> dic_obj;
-			trailer = lit("startxref") >> int_ >> skip(white_space)[lit("%%EOF")];
 
 			// Name setting
-			pdf.name("pdf");
 			literal_string.name("literal_string");
 			literal_string_.name("literal_string_");
 			literal_string_char.name("literal_string_char");
@@ -315,23 +308,14 @@ namespace yak { namespace pdf {
 			array_obj.name("array_obj");
 			object.name("object");
 			dic_obj.name("dic_obj");
-			indirect_obj.name("indirect_obj");
 			indirect_ref.name("indirect_ref");
 			null_obj.name("null_obj");
 			stream.name("stream");
 			stream_data.name("stream_data");
 			stream_data_wo_length.name("stream_data_wo_length");
-			xref_section.name("xref_section");
-			xref_subsection.name("xref_subsection");
-			xref_entry.name("xref_entry");
-			trailer_dic.name("trailer_dic");
-			trailer.name("trailer");
-
-//			debug(pdf);
 		}
 		qi::symbols<char const, char const> unesc_char;
 		qi::symbols<char const, char const> eol_char;
-		qi::rule<Iterator,pdf_data(), skip_normal_expr_type> pdf;
 		qi::rule<Iterator,std::string()> literal_string;
 		qi::rule<Iterator,std::string()> literal_string_;
 		qi::rule<Iterator,char()> literal_string_char;
@@ -347,17 +331,62 @@ namespace yak { namespace pdf {
 		qi::rule<Iterator,array(), skip_normal_expr_type> array_obj;
 		qi::rule<Iterator,yak::pdf::object(), skip_normal_expr_type> object;
 		qi::rule<Iterator,dictionary(), skip_normal_expr_type> dic_obj;
-		qi::rule<Iterator,yak::pdf::indirect_obj(), skip_normal_expr_type> indirect_obj;
 		qi::rule<Iterator,yak::pdf::indirect_ref(), skip_normal_expr_type> indirect_ref;
 		qi::rule<Iterator,yak::pdf::null(), skip_normal_expr_type> null_obj;
 		qi::rule<Iterator,yak::pdf::stream(), skip_normal_expr_type, qi::locals<dictionary> > stream;
 		qi::rule<Iterator,std::vector<char>(const dictionary&)> stream_data;
 		qi::rule<Iterator,std::vector<char>(const dictionary&)> stream_data_wo_length;
+	};
+
+	template <typename Iterator>
+	struct pdf_parser : qi::grammar<Iterator, pdf_data(), skip_normal_expr_type>
+	{
+		struct get_dictionary_impl
+		{
+			template<typename A1>
+			struct result { typedef const dictionary& type; };
+			const dictionary& operator()(const object& obj) const
+			{
+				return boost::get<dictionary>(obj);
+			}
+		};
+		boost::phoenix::function<get_dictionary_impl> get_dictionary;
+		pdf_parser() : pdf_parser::base_type(pdf, "pdf")
+		{
+			using qi::lit;
+			using qi::char_;
+			using qi::int_;
+			using qi::skip;
+			using qi::no_skip;
+			using namespace qi::labels;
+
+			pdf = no_skip[lit("%PDF-") >> int_ >> lit('.') >> int_ >> *skip[indirect_obj] >> -skip[xref_section] >> skip[-trailer_dic >> trailer]];
+			indirect_obj = int_ >> int_ >> lit("obj") >> object >> lit("endobj");
+			xref_section = lit("xref") >> *xref_subsection;
+			xref_subsection = int_ >> int_[_a = _1] >> qi::repeat(_a)[xref_entry];
+			xref_entry = int_ >> int_ >> char_;
+			trailer_dic = lit("trailer") >> object[_val = get_dictionary(_1)];
+			trailer = lit("startxref") >> int_ >> skip(white_space)[lit("%%EOF")];
+
+			// Name setting
+			pdf.name("pdf");
+			indirect_obj.name("indirect_obj");
+			xref_section.name("xref_section");
+			xref_subsection.name("xref_subsection");
+			xref_entry.name("xref_entry");
+			trailer_dic.name("trailer_dic");
+			trailer.name("trailer");
+
+//			debug(pdf);
+		}
+		qi::rule<Iterator,pdf_data(), skip_normal_expr_type> pdf;
+		qi::rule<Iterator,yak::pdf::indirect_obj(), skip_normal_expr_type> indirect_obj;
 		qi::rule<Iterator, void(), skip_normal_expr_type> xref_section;
 		qi::rule<Iterator, skip_normal_expr_type, qi::locals<int> > xref_subsection;
 		qi::rule<Iterator, skip_normal_expr_type> xref_entry;
 		qi::rule<Iterator, dictionary(), skip_normal_expr_type> trailer_dic;
 		qi::rule<Iterator, skip_normal_expr_type> trailer;
+		object_parser<Iterator> object;
 	};
 	template <typename Iterator>
 	bool parse_pdf(Iterator first, Iterator last, pdf_data &pd)

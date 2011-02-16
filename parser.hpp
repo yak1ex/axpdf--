@@ -21,6 +21,8 @@
 #include <vector>
 #include <map>
 
+#include "zlib.h"
+
 #include "spirit_helper.hpp"
 
 namespace boost {
@@ -177,6 +179,18 @@ namespace yak { namespace pdf {
 		{
 			(*this)(s.dic);
 			os << "stream" << std::endl;
+			if(has_value(s.dic, name("Filter"), name("FlateDecode"))) {
+				uLongf size = s.data.size();
+				std::string str;
+				int res;
+				do {
+					size *= 2;
+					str.resize(size);
+					res = uncompress((Bytef*)&str[0], &size, (Bytef*)&s.data[0], s.data.size());
+				} while(res == Z_BUF_ERROR);
+				str.resize(size);
+				os << str;
+			}
 			os << "endstream" << std::endl;
 		}
 	};

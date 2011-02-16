@@ -23,6 +23,10 @@
 
 #include "spirit_helper.hpp"
 
+namespace boost {
+	struct recursive_variant_ {};
+}
+
 BOOST_FUSION_DEFINE_STRUCT(
 	(yak)(pdf),
 	indirect_ref,

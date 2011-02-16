@@ -208,7 +208,7 @@ INT PASCAL GetFileInfo(LPSTR buf, LONG len, LPSTR filename, UINT flag, SPI_FILEI
 	}
 	HLOCAL hInfo;
 	if(GetArchiveInfo(buf, len, flag&7, &hInfo) == SPI_ERR_NO_ERROR) {
-		int WINAPI (*compare)(LPCSTR, LPCSTR) = flag&7 ? lstrcmpi : lstrcmp;
+		int (WINAPI *compare)(LPCSTR, LPCSTR) = flag&7 ? lstrcmpi : lstrcmp;
 		std::size_t size = LocalSize(hInfo);
 		SPI_FILEINFO *p = static_cast<SPI_FILEINFO*>(LocalLock(hInfo)), *cur = p;
 		std::size_t count = size / sizeof(SPI_FILEINFO);

@@ -222,7 +222,7 @@ namespace yak { namespace pdf {
 			struct result { typedef int type; };
 			int operator()(const dictionary& dic) const
 			{
-				return boost::get<int>(dic.find(name("Length"))->second);
+				return boost::get<int>(dic.find(yak::pdf::name("Length"))->second);
 			}
 		};
 		boost::phoenix::function<get_length_impl> get_length;
@@ -232,7 +232,7 @@ namespace yak { namespace pdf {
 			struct result { typedef bool type; };
 			bool operator()(const dictionary& dic) const
 			{
-				dictionary::const_iterator iter = dic.find(name("Length"));
+				dictionary::const_iterator iter = dic.find(yak::pdf::name("Length"));
 				return iter != dic.end() && boost::get<int>(&(iter->second));
 			}
 		};
@@ -328,7 +328,7 @@ namespace yak { namespace pdf {
 		qi::rule<Iterator,char()> hex_char;
 		qi::rule<Iterator,char()> hex_digit;
 		qi::rule<Iterator,char()> regular_char;
-		qi::rule<Iterator,name()> name_obj;
+		qi::rule<Iterator,yak::pdf::name()> name_obj; // qualificatoin needed by VC++10
 		qi::rule<Iterator,char()> hex_char_name;
 		qi::rule<Iterator,array(), skip_normal_expr_type> array_obj;
 		qi::rule<Iterator,yak::pdf::object(), skip_normal_expr_type> object;

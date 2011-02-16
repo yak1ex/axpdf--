@@ -1,0 +1,37 @@
+CC = cl
+CFLAGS  = -nologo -MD -W3 -O2 -Oy- -Zi -EHsc -I c:\cygwin17\var\tmp\boost_1_45_0 -I .\zlib
+OBJEXT = obj
+LDFLAGS = -nologo -debug -incremental:no -opt:ref
+LD = link
+LINK = $(LD) $(LDFLAGS) $(LIBS)
+LIBS = zlib\zlib.lib
+
+all: axpdf--.spi pdf.exe test.exe test2.exe
+
+axpdf--.$(OBJEXT): axpdf--.cpp spirit_helper.hpp parser.hpp
+
+odstream.$(OBJEXT): odstream.cpp odstream.hpp
+
+axpdf--.spi: axpdf--.$(OBJEXT) odstream.$(OBJEXT) axpdf--.def
+	$(LINK) -dll -out:$@ -def:axpdf--vc.def axpdf--.$(OBJEXT) odstream.$(OBJEXT) User32.lib
+
+pdf.$(OBJEXT): pdf.cpp spirit_helper.hpp parser.hpp
+
+pdf.exe: pdf.$(OBJEXT)
+
+test.$(OBJEXT): test.cpp spirit_helper.hpp
+
+test.exe: test.$(OBJEXT)
+
+test2.$(OBJEXT): test2.cpp
+
+test2.exe: test2.$(OBJEXT)
+
+.obj.exe:
+	$(LINK) $< -out:$@
+
+.cpp.obj:
+	$(CC) -c $(WFLAGS) $(CFLAGS) $<
+
+clean:
+	del *.$(OBJEXT) *.spi

@@ -6,7 +6,7 @@ LD = link
 LINK = $(LD) $(LDFLAGS) $(LIBS)
 LIBS = zlib\zlib.lib
 
-all: axpdf--.spi pdf.exe test.exe test2.exe
+all: axpdf--.spi pdf.exe test.exe test2.exe test3.exe
 
 axpdf--.$(OBJEXT): axpdf--.cpp spirit_helper.hpp parser.hpp
 
@@ -26,6 +26,10 @@ test.exe: test.$(OBJEXT)
 test2.$(OBJEXT): test2.cpp
 
 test2.exe: test2.$(OBJEXT)
+
+test3.$(OBJEXT): test3.cpp parser.hpp
+
+test3.exe: test3.$(OBJEXT)
 
 .obj.exe:
 	$(LINK) $< -out:$@

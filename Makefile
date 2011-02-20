@@ -23,6 +23,9 @@ test.exe: test.cpp spirit_helper.hpp
 test2.exe: test2.cpp
 	$(LINK.cc) $< -o $@
 
+test3.exe: test3.cpp
+	$(LINK.cc) $< -o $@
+
 %.spi: %.o
 	$(LINK.cc) -mwindows -shared $^ -o $@
 

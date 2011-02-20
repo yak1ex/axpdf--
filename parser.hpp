@@ -20,6 +20,8 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <stdexcept>
+#include <algorithm>
 
 #include "zlib.h"
 
@@ -450,6 +452,126 @@ namespace yak { namespace pdf {
 
 		return parse_pdf(first, last, pd);
 	}
+
+	class invalid_pdf : public std::runtime_error
+	{
+	public:
+		explicit invalid_pdf (const std::string& what_arg) : std::runtime_error(what_arg)
+		{
+		}
+	};
+
+	template<typename Iterator>
+	class pdf_reader
+	{
+	protected:
+		pdf_reader()
+		{
+		}
+		void init(Iterator first_, Iterator last_)
+		{
+			first = first_;
+			last = last_;
+			int offset = get_xref_offset();
+std::cerr << offset << std::endl;
+			// read_xref();
+		}
+	public:
+		pdf_reader(Iterator first, Iterator last)
+		{
+			init(first, last);
+		}
+	private:
+		typedef std::reverse_iterator<Iterator> RIterator;
+		RIterator skip_ws(RIterator first, RIterator last)
+		{
+			while(first != last && 
+				(*first == ' ' || *first == '\t' || *first == '\x0d' || *first == '\x0a')) {
+				++first;
+			}
+			return first;
+		}
+		RIterator skip_nl(RIterator first, RIterator last)
+		{
+			while(first != last && 
+				(*first == '\x0d' || *first == '\x0a')) {
+				++first;
+			}
+			return first;
+		}
+		RIterator get_offset(RIterator first, RIterator last, int &index)
+		{
+			int unit = 1, result = 0;
+			while(first != last && '0' <= *first && *first <= '9') {
+				result += (*first - '0') * unit;
+				++first;
+				unit *= 10;
+			}
+			if(unit > 1) index = result;
+			else throw invalid_pdf("No xref offset found");
+			return first;
+		}
+		int get_xref_offset()
+		{
+			const std::string trailer_marker("%%EOF");
+			const std::string startxref_marker("startxref");
+
+			RIterator rfirst(last);
+			RIterator rlast(first);
+
+			int index;
+			rfirst = skip_nl(rfirst, rlast);
+			std::pair<RIterator, std::string::const_reverse_iterator> res
+				= yak::util::safe_mismatch(rfirst, rlast, trailer_marker.rbegin(), trailer_marker.rend());
+			if(res.first == rlast || res.second != trailer_marker.rend())
+				throw invalid_pdf("No EOF marker found");
+			rfirst = res.first;
+			rfirst = skip_ws(rfirst, rlast);
+			rfirst = get_offset(rfirst, rlast, index);
+			rfirst = skip_ws(rfirst, rlast);
+			res = yak::util::safe_mismatch(rfirst, rlast, startxref_marker.rbegin(), startxref_marker.rend());
+			if(res.first == rlast || res.second != startxref_marker.rend())
+				throw invalid_pdf("No startxref marker found");
+			rfirst = res.first;
+			return index;
+		}
+
+		std::map<indirect_ref, object> objects;
+		struct xref_entry
+		{
+			enum xref_type {
+				FREE, USED, COMPRESSED
+			} type;
+			int generation;
+			int offset;
+		};
+		std::map<int, xref_entry> xref;
+		Iterator first, last;
+	};
+
+	template<typename Iterator>
+	pdf_reader<Iterator> make_pdf_reader(Iterator first, Iterator last)
+	{
+		return pdf_reader<Iterator>(first, last);
+	}
+
+	class pdf_file_reader : public pdf_reader<const char*>
+	{
+	public:
+		pdf_file_reader(const std::string& filename) : 
+			fm(filename.c_str(), boost::interprocess::read_only),
+			region(fm, boost::interprocess::read_only)
+		{
+			const char* first_ = static_cast<char*>(region.get_address());
+			std::size_t size = region.get_size();
+			const char* last_ = first_ + size;
+
+			init(first_, last_);
+		}
+	private:
+		boost::interprocess::file_mapping fm;
+		boost::interprocess::mapped_region region;
+	};
 
 }}
 

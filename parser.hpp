@@ -157,6 +157,20 @@ namespace yak { namespace pdf {
 
 }}
 
+namespace boost { namespace spirit { namespace traits {
+
+	template <>
+	// Attrib, T, Enable
+	struct assign_to_attribute_from_value<yak::pdf::dictionary, yak::pdf::object, void>
+	{
+		static void call(yak::pdf::object const& val, yak::pdf::dictionary& attr)
+		{
+			attr = boost::get<yak::pdf::dictionary>(val);
+		}
+	};
+
+}}}
+
 namespace yak { namespace pdf {
 
 	struct output_visitor : public boost::static_visitor<>
@@ -406,7 +420,8 @@ namespace yak { namespace pdf {
 			xref_section = lit("xref") >> *xref_subsection;
 			xref_subsection = int_ >> int_[_a = _1] >> qi::repeat(_a)[xref_entry];
 			xref_entry = int_ >> int_ >> char_;
-			trailer_dic = lit("trailer") >> object[_val = get_dictionary(_1)];
+//			trailer_dic = lit("trailer") >> object[_val = get_dictionary(_1)];
+			trailer_dic = lit("trailer") >> object;
 			trailer = lit("startxref") >> int_ >> skip(white_space)[lit("%%EOF")];
 
 			// Name setting

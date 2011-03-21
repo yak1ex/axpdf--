@@ -3,10 +3,13 @@
 
 #include <iosfwd>
 #include <vector>
+#include <utility>
 #include <boost/iostreams/concepts.hpp> // input_filter
 #include <boost/iostreams/operations.hpp> // get, EOF, WOULD_BLOCK
 
-namespace yak { namespace pdf {
+#include "types.hpp"
+
+namespace yak { namespace pdf { namespace decoder {
 
 	class predicator_png : public boost::iostreams::input_filter
 	{
@@ -96,6 +99,9 @@ namespace yak { namespace pdf {
 		unsigned char prev_val;
 	};
 
-}}
+	std::auto_ptr<std::istream> create_decoder(const yak::pdf::stream &s);
+	void get_decoded_result(const yak::pdf::stream &st, std::string &s);
+
+}}}
 
 #endif

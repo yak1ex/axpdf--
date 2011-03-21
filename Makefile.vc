@@ -8,16 +8,22 @@ LIBS = libboost_iostreams-vc100-mt.lib
 
 all: axpdf--.spi pdf.exe test.exe test2.exe test3.exe
 
-axpdf--.$(OBJEXT): axpdf--.cpp spirit_helper.hpp parser.hpp
+axpdf--.$(OBJEXT): axpdf--.cpp spirit_helper.hpp parser.hpp types.hpp types_output.hpp decoder.hpp
 
 odstream.$(OBJEXT): odstream.cpp odstream.hpp
 
-axpdf--.spi: axpdf--.$(OBJEXT) odstream.$(OBJEXT) axpdf--.def
-	$(LINK) -dll -out:$@ -def:axpdf--vc.def axpdf--.$(OBJEXT) odstream.$(OBJEXT) User32.lib
+AXPDF_OBJS = axpdf--.$(OBJEXT) decoder.$(OBJEXT) types_output.$(OBJEXT) odstream.$(OBJEXT)
 
-pdf.$(OBJEXT): pdf.cpp spirit_helper.hpp parser.hpp
+axpdf--.spi: $(AXPDF_OBJS) axpdf--vc.def
+	$(LINK) -dll -out:$@ -def:axpdf--vc.def $(AXPDF_OBJS) User32.lib
 
-pdf.exe: pdf.$(OBJEXT)
+pdf.$(OBJEXT): pdf.cpp spirit_helper.hpp parser.hpp util.hpp types.hpp types_output.hpp decoder.hpp
+
+decoder.$(OBJEXT): decoder.cpp decoder.hpp types.hpp
+
+types_output.$(OBJEXT): types_output.cpp types_output.hpp decoder.hpp types.hpp
+
+pdf.exe: pdf.$(OBJEXT) decoder.$(OBJEXT) types_output.$(OBJEXT) 
 
 test.$(OBJEXT): test.cpp spirit_helper.hpp
 
@@ -32,7 +38,7 @@ test3.$(OBJEXT): test3.cpp parser.hpp
 test3.exe: test3.$(OBJEXT)
 
 .obj.exe:
-	$(LINK) $< -out:$@
+	$(LINK) $** -out:$@
 
 .cpp.obj:
 	$(CC) -c $(WFLAGS) $(CFLAGS) $<

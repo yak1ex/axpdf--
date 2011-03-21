@@ -10,155 +10,24 @@
 #include <boost/spirit/include/phoenix_container.hpp>
 #include <boost/spirit/home/qi/nonterminal/debug_handler.hpp>
 
-#include <boost/variant/recursive_variant.hpp>
-#include <boost/fusion/include/define_struct.hpp>
-#include <boost/fusion/include/std_pair.hpp>
 #include <boost/interprocess/file_mapping.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 
-#include <iostream>
-#include <string>
-#include <vector>
-#include <map>
 #include <stdexcept>
 #include <algorithm>
 
-#include "zlib.h"
-
 #include "spirit_helper.hpp"
-
-namespace yak { namespace util {
-
-	template<typename InputIterator1, typename InputIterator2>
-	std::pair<InputIterator1, InputIterator2>
-	safe_mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2)
-	{
-		while(first1 != last1 && first2 != last2 && *first1 == *first2) {
-			++first1; ++first2;
-		}
-		return std::make_pair(first1, first2);
-	}
-	template<typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-	std::pair<InputIterator1, InputIterator2>
-	safe_mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, BinaryPredicate pred)
-	{
-		while(first1 != last1 && first2 != last2 && pred(*first1, *first2)) {
-			++first1; ++first2;
-		}
-		return std::make_pair(first1, first2);
-	}
-	template<typename InputIterator1, typename InputIterator2>
-	bool safe_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2)
-	{
-		while(first1 != last1 && first2 != last2 && *first1 == *first2) {
-			++first1; ++first2;
-		}
-		return first1 == last1 && first2 == last2;
-	}
-	template<typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-	bool safe_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, BinaryPredicate pred)
-	{
-		while(first1 != last1 && first2 != last2 && pred(*first1, *first2)) {
-			++first1; ++first2;
-		}
-		return first1 == last1 && first2 == last2;
-	}
-
-}}
-
-namespace boost {
-	struct recursive_variant_ {};
-}
-
-BOOST_FUSION_DEFINE_STRUCT(
-	(yak)(pdf),
-	indirect_ref,
-	(int, number)
-	(int, generation)
-)
-
-namespace yak { namespace pdf {
-
-	struct name
-	{
-		std::string value;
-		name() {}
-		name(const std::string &s) : value(s) {}
-		name& operator=(const std::vector<char> &v) {
-			value.assign(v.begin(), v.end());
-			return *this;
-		}
-		operator std::string() const { return value; }
-	};
-	bool operator==(const name& n1, const name &n2)
-	{
-		return n1.value == n2.value;
-	}
-	bool operator<(const name& n1, const name &n2)
-	{
-		return n1.value < n2.value;
-	}
-	std::ostream& operator<<(std::ostream& os, const name &n)
-	{
-		os << '/' << n.value; return os;
-	}
-	struct null {};
-	std::ostream& operator<<(std::ostream& os, const null &n)
-	{
-		os << "null"; return os;
-	}
-	struct stream;
-	typedef boost::make_recursive_variant<
-		bool, int, double, std::string, std::vector<char>, name,
-		std::map<name, boost::recursive_variant_>, // dictionary
-		std::vector<boost::recursive_variant_>, // array
-		indirect_ref, null, stream
-	>::type object;
-	typedef std::map<name, object> dictionary;
-}}
-
-BOOST_FUSION_DEFINE_STRUCT(
-	(yak)(pdf),
-	stream,
-	(yak::pdf::dictionary, dic)
-	(std::vector<char>, data)
-)
-BOOST_FUSION_DEFINE_STRUCT(
-	(yak)(pdf),
-	indirect_obj,
-	(int, number)
-	(int, generation)
-	(yak::pdf::object, value)
-)
-BOOST_FUSION_DEFINE_STRUCT(
-	(yak)(pdf),
-	pdf_data,
-	(int, major_ver)
-	(int, minor_ver)
-	(std::vector<yak::pdf::indirect_obj>, objects)
-	(yak::pdf::dictionary, trailer_dic)
-)
-
-namespace yak { namespace pdf {
-
-	template<typename T>
-	bool is_type(const object &obj)
-	{
-		return boost::get<T>(&obj) != 0;
-	}
-	template<typename T>
-	bool has_value(const dictionary &dic, const name &n, const T& t)
-	{
-		return dic.count(n) &&
-			boost::get<T>(&dic.find(n)->second) &&
-			boost::get<T>(dic.find(n)->second) == t;
-	}
-	typedef std::vector<object> array;
-
-}}
+#include "util.hpp"
+#include "types.hpp"
+#include "types_output.hpp"
+#include "decoder.hpp"
 
 namespace boost { namespace spirit { namespace traits {
 
+	template <>
+	struct is_container<yak::pdf::dictionary> : mpl::false_ {};
+
+	// Conversion from yak::pdf::object to yak::pdf::dictionary
 	template <>
 	// Attrib, T, Enable
 	struct assign_to_attribute_from_value<yak::pdf::dictionary, yak::pdf::object, void>
@@ -169,112 +38,52 @@ namespace boost { namespace spirit { namespace traits {
 		}
 	};
 
+	// Conversion from yak::pdf::indirect_obj to yak::pdf::xref_section
+	template <>
+	// Attrib, T, Enable
+	struct assign_to_attribute_from_value<yak::pdf::xref_section, yak::pdf::indirect_obj, void>
+	{
+		static int read_bin(std::istream& is, int size)
+		{
+			int value = 0;
+			while(size-->0) {
+				value = value * 256 + is.get();
+			}
+			return value;
+		}
+		static void call(yak::pdf::indirect_obj const& val, yak::pdf::xref_section& attr)
+		{
+			const yak::pdf::stream &st = boost::get<yak::pdf::stream>(val.value);
+			std::auto_ptr<std::istream> pis = yak::pdf::decoder::create_decoder(st);
+			yak::pdf::array index;
+			if(has_key(st.dic, yak::pdf::name("Index"))) {
+				index = yak::pdf::get_value<yak::pdf::array>(st.dic, yak::pdf::name("Index"));
+			} else {
+				index.push_back(0);
+				index.push_back(yak::pdf::get_value<int>(st.dic, yak::pdf::name("Size")));
+			}
+			const yak::pdf::array &w = yak::pdf::get_value<yak::pdf::array>(st.dic, yak::pdf::name("W"));
+			int w_type = boost::get<int>(w[0]), w_info1 = boost::get<int>(w[1]), w_info2 = boost::get<int>(w[2]);
+
+			yak::pdf::array::iterator it = index.begin();
+			while(it != index.end()) {
+				int first = boost::get<int>(*it++);
+				int size = boost::get<int>(*it++);
+				for(int i = 0; i < size; ++i) {
+					int type = read_bin(*pis, w_type);
+					int generation = read_bin(*pis, w_info1);
+					int offset = read_bin(*pis, w_info2);
+					yak::pdf::xref_entry ent(static_cast<yak::pdf::xref_type>(type), generation, offset);
+					attr.entries.insert(std::make_pair(first + i, ent));
+				}
+			}
+			attr.trailer_dic = st.dic;
+		}
+	};
+
 }}}
 
 namespace yak { namespace pdf {
-
-	struct output_visitor : public boost::static_visitor<>
-	{
-		static const int indent = 2;
-		std::ostream &os;
-		int level;
-		void make_indent()
-		{
-			for(int i = 0 ; i < level*indent; ++i) { os << ' '; }
-		}
-		void output_nibble(int n)
-		{
-			os << "0123456789ABCDEF"[n&0xF];
-		}
-		output_visitor(std::ostream &os, int level = 0) : os(os), level(level) {}
-		template<typename T>
-		void operator()(const T& t)
-		{
-			make_indent(); os << t << std::endl;
-		}
-		void operator()(const std::string &s)
-		{
-			make_indent(); os << '(' << s << ')' << std::endl;
-		}
-		void operator()(const std::vector<char>& v)
-		{
-			make_indent(); os << '<'; 
-			for(std::size_t i = 0; i < v.size(); ++i) {
-				output_nibble(v[i]); output_nibble(v[i]>>4);
-			}
-			os << '>' << std::endl;
-		}
-		void operator()(const dictionary& m)
-		{
-			make_indent(); os << "<<" << std::endl; ++level; 
-			for(dictionary::const_iterator mi = m.begin(); mi != m.end(); ++mi)
-			{
-				make_indent(); os << '/' << mi->first.value << std::endl;
-				++level; boost::apply_visitor((*this), mi->second); --level;
-			}
-			--level; make_indent(); os << ">>" << std::endl;
-		}
-		void operator()(const array& v)
-		{
-			make_indent(); os << '[' << std::endl; ++level; 
-			for(std::size_t i = 0; i < v.size(); ++i) {
-				boost::apply_visitor((*this), v[i]);
-			}
-			--level; make_indent(); os << ']' << std::endl;
-		}
-		void operator()(const indirect_ref& r)
-		{
-			make_indent(); os << r.number << ' ' << r.generation << " R" << std::endl;
-		}
-		void operator()(const null& n)
-		{
-			make_indent(); os << "null" << std::endl;
-		}
-		void operator()(const stream& s)
-		{
-			(*this)(s.dic);
-			os << "stream" << std::endl;
-			if(has_value(s.dic, name("Filter"), name("FlateDecode"))) {
-				uLongf size = s.data.size();
-				std::string str;
-				int res;
-				do {
-					size *= 2;
-					str.resize(size);
-					res = uncompress((Bytef*)&str[0], &size, (Bytef*)&s.data[0], s.data.size());
-				} while(res == Z_BUF_ERROR);
-				str.resize(size);
-				os << str;
-			}
-			os << "endstream" << std::endl;
-		}
-	};
-	void out(std::ostream &os, const object& obj, int level = 0)
-	{
-		output_visitor visitor(os, level);
-		boost::apply_visitor(visitor, obj);
-	}
-	std::ostream& operator<<(std::ostream &os, const object& obj)
-	{
-		out(os, obj); return os;
-	}
-	std::ostream& operator<<(std::ostream &os, const std::vector<indirect_obj> &objs)
-	{
-		for(std::size_t i = 0; i < objs.size(); ++i) {
-			os << objs[i].number << ' ' << objs[i].generation << " obj" << std::endl;
-			out(os, objs[i].value, 1);
-			os << "endobj" << std::endl;
-		}
-		return os;
-	}
-	std::ostream& operator<<(std::ostream &os, const pdf_data &pd)
-	{
-		os << "%PDF-" << pd.major_ver << '.' << pd.minor_ver << std::endl;
-		os << pd.objects;
-		os << "trailer" << std::endl;
-		output_visitor(os, 0)(pd.trailer_dic);
-		return os;
-	}
 
 	namespace qi = boost::spirit::qi;
 
@@ -391,6 +200,22 @@ namespace yak { namespace pdf {
 		qi::rule<Iterator,yak::pdf::stream(), skip_normal_expr_type, qi::locals<dictionary> > stream;
 		qi::rule<Iterator,std::vector<char>(const dictionary&)> stream_data;
 		qi::rule<Iterator,std::vector<char>(const dictionary&)> stream_data_wo_length;
+	};
+
+	template <typename Iterator>
+	struct xref_parser : qi::grammar<Iterator, xref_section(), skip_normal_expr_type>
+	{
+		xref_parser() : xref_parser::base_type(xref, "xref")
+		{
+			xref = xref_stream | xref_table;
+			xref_stream = indirect_obj;
+			indirect_obj = int_ >> int_ >> lit("obj") >> object >> lit("endobj");
+		}
+		qi::rule<Iterator,yak::pdf::xref_section(), skip_normal_expr_type> xref;
+		qi::rule<Iterator,yak::pdf::xref_section(), skip_normal_expr_type> xref_stream;
+		qi::rule<Iterator,yak::pdf::xref_section(), skip_normal_expr_type> xref_table;
+		qi::rule<Iterator,yak::pdf::indirect_obj(), skip_normal_expr_type> indirect_obj;
+		object_parser<Iterator> object;
 	};
 
 	template <typename Iterator>
@@ -552,15 +377,6 @@ std::cerr << offset << std::endl;
 		}
 
 		std::map<indirect_ref, object> objects;
-		struct xref_entry
-		{
-			enum xref_type {
-				FREE, USED, COMPRESSED
-			} type;
-			int generation;
-			int offset;
-		};
-		std::map<int, xref_entry> xref;
 		Iterator first, last;
 	};
 

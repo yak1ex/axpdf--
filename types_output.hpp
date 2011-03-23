@@ -4,6 +4,7 @@
 #include <boost/variant/apply_visitor.hpp>
 
 #include <iostream>
+#include <utility>
 
 #include "types.hpp"
 #include "decoder.hpp"
@@ -73,7 +74,14 @@ namespace yak { namespace pdf {
 			os << "stream" << std::endl;
 			std::string str;
 			decoder::get_decoded_result(s, str);
-			os << str; // TODO ascii check
+			bool flag = true;
+			for(std::size_t i=0;i<(std::min)(20U, str.size());++i) {
+				if(str[i] < 0x20U || str[i] > 0x7EU) {
+					flag = false;
+					break;
+				}
+			}
+			if(flag) os << str;
 			os << "endstream" << std::endl;
 		}
 	};

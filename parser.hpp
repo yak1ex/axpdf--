@@ -207,6 +207,9 @@ namespace yak { namespace pdf {
 	{
 		xref_parser() : xref_parser::base_type(xref, "xref")
 		{
+			using qi::lit;
+			using qi::int_;
+
 			xref = xref_stream | xref_table;
 			xref_stream = indirect_obj;
 			indirect_obj = int_ >> int_ >> lit("obj") >> object >> lit("endobj");
@@ -314,7 +317,11 @@ namespace yak { namespace pdf {
 			last = last_;
 			int offset = get_xref_offset();
 std::cerr << offset << std::endl;
-			// read_xref();
+			read_xref(offset);
+yak::pdf::output_visitor ov(std::cerr); ov(xref.trailer_dic);
+for(xref_table::iterator it = xref.entries.begin(); it != xref.entries.end();++it) {
+	std::cerr << it->first << ':' << it->second.type << ':' << it->second.generation << ':' << it->second.offset << std::endl;
+}
 		}
 	public:
 		pdf_reader(Iterator first, Iterator last)
@@ -322,6 +329,14 @@ std::cerr << offset << std::endl;
 			init(first, last);
 		}
 	private:
+		void read_xref(int offset)
+		{
+			Iterator first_(first + offset);
+			xref_parser<Iterator> g;
+			bool r = phrase_parse(first_, last, g, skip_normal, xref);
+
+			if (!r) throw 1; // TODO proper exception
+		}
 		typedef std::reverse_iterator<Iterator> RIterator;
 		RIterator skip_ws(RIterator first, RIterator last)
 		{
@@ -377,6 +392,7 @@ std::cerr << offset << std::endl;
 		}
 
 		std::map<indirect_ref, object> objects;
+		xref_section xref;
 		Iterator first, last;
 	};
 

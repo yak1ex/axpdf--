@@ -35,7 +35,7 @@ test2.exe: test2.$(OBJEXT)
 
 test3.$(OBJEXT): test3.cpp parser.hpp
 
-test3.exe: test3.$(OBJEXT)
+test3.exe: test3.$(OBJEXT) decoder.$(OBJEXT) types_output.$(OBJEXT)
 
 .obj.exe:
 	$(LINK) $** -out:$@

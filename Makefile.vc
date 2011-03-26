@@ -1,7 +1,7 @@
 CC = cl
 CFLAGS  = -nologo -MD -W3 -O2 -Oy- -Zi -EHsc -I c:/usr/local/include
 OBJEXT = obj
-LDFLAGS = -nologo -debug -incremental:no -opt:ref -libpath:c:/usr/local/lib
+LDFLAGS = -nologo -incremental:no -opt:ref -libpath:c:/usr/local/lib
 LD = link
 LINK = $(LD) $(LDFLAGS) $(LIBS)
 LIBS = libboost_iostreams-vc100-mt.lib

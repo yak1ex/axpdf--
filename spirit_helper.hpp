@@ -24,11 +24,23 @@ namespace yak { namespace spirit {
 
 	struct append_impl
 	{
+		// string
 		template<typename A1, typename A2>
 		struct result { typedef void type; };
 		void operator()(std::string &s1, const std::string &s2) const
 		{
 			s1.append(s2);
+		}
+		// container but not string
+		template<typename Out, typename In>
+		void operator()(Out &out, const In &in) const
+		{
+			using namespace boost::spirit;
+			typedef typename traits::container_iterator<In const>::type 
+				iterator_type;
+			iterator_type end = traits::end(in);
+			for (iterator_type i = traits::begin(in); i != end; traits::next(i))
+				traits::push_back(out, traits::deref(i));
 		}
 	};
 	boost::phoenix::function<append_impl> append;

@@ -28,5 +28,25 @@ namespace yak { namespace pdf {
 		output_visitor(os, 0)(pd.trailer_dic);
 		return os;
 	}
+	std::ostream& operator<<(std::ostream &os, const xref_section &xs)
+	{
+		os << "trailer" << std::endl;
+		yak::pdf::output_visitor ov(os);
+		ov(xs.trailer_dic);
+
+		os << "xref" << std::endl;
+		for(xref_table::const_iterator it = xs.entries.begin(); it != xs.entries.end();++it) {
+			os << it->first << ':' << it->second.type << ':' << it->second.generation << ':' << it->second.offset << std::endl;
+		}
+
+		return os;
+	}
+	std::ostream& operator<<(std::ostream &os, const dictionary &dic)
+	{
+		yak::pdf::output_visitor ov(os);
+		ov(dic);
+
+		return os;
+	}
 
 }}

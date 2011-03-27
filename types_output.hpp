@@ -89,6 +89,8 @@ namespace yak { namespace pdf {
 	std::ostream& operator<<(std::ostream &os, const object& obj);
 	std::ostream& operator<<(std::ostream &os, const std::vector<indirect_obj> &objs);
 	std::ostream& operator<<(std::ostream &os, const pdf_data &pd);
+	std::ostream& operator<<(std::ostream &os, const xref_section &xs);
+	std::ostream& operator<<(std::ostream &os, const dictionary &dic);
 
 }}
 

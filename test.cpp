@@ -29,16 +29,6 @@ namespace client
 			}
 		};
 		boost::phoenix::function<output_impl> output;
-		struct append_impl
-		{
-			template<typename A1, typename A2>
-			struct result { typedef void type; };
-			void operator()(std::string &s1, const std::string &s2) const
-			{
-				s1.append(s2);
-			}
-		};
-		boost::phoenix::function<append_impl> append;
 		struct nop_impl
 		{
 			typedef void result_type;
@@ -53,12 +43,15 @@ namespace client
 			v.push_back(0);
 			v.push_back(0);
 
-			root = yak::spirit::delimited(v)[qi::int_];
+			root = *int_list[yak::spirit::append(_val,_1)];
+			int_list = *qi::int_ >> qi::omit[qi::char_];
 
 			// Name setting
 			root.name("root");
+			int_list.name("int_list");
 		}
 		qi::rule<Iterator,std::vector<int>(),qi::space_type> root;
+		qi::rule<Iterator,std::vector<int>(),qi::space_type> int_list;
 	};
 	template <typename Iterator>
 	bool parse_test(Iterator first, Iterator last, std::vector<int> &s)

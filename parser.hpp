@@ -8,7 +8,9 @@
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/phoenix_function.hpp>
 #include <boost/spirit/include/phoenix_container.hpp>
+#include <boost/spirit/include/phoenix_fusion.hpp>
 #include <boost/spirit/home/qi/nonterminal/debug_handler.hpp>
+#include <boost/fusion/include/at_c.hpp>
 
 #include <boost/interprocess/file_mapping.hpp>
 #include <boost/interprocess/mapped_region.hpp>
@@ -205,20 +207,63 @@ namespace yak { namespace pdf {
 	template <typename Iterator>
 	struct xref_parser : qi::grammar<Iterator, xref_section(), skip_normal_expr_type>
 	{
+		struct convert2xref_entry_impl
+		{
+			template<typename A1, typename A2, typename A3, typename A4>
+			struct result { typedef std::pair<int, yak::pdf::xref_entry> type; };
+
+			std::pair<int, yak::pdf::xref_entry> operator()(int n1, int n2, char c, int start) const
+			{
+				static int prev_start = -1;
+				static int cur = -1;
+				if(prev_start != start) {
+					cur = prev_start = start;
+				}
+				return std::pair<int, yak::pdf::xref_entry>(cur++, yak::pdf::xref_entry(
+					c == 'f' ? XREF_FREE : XREF_USED,
+					n2,
+					n1
+				));
+			}
+		};
+		boost::phoenix::function<convert2xref_entry_impl> convert2xref_entry;
+
 		xref_parser() : xref_parser::base_type(xref, "xref")
 		{
 			using qi::lit;
 			using qi::int_;
+			using qi::char_;
+			using namespace qi::labels;
 
-			xref = xref_stream | xref_table;
+			xref = xref_stream | xref_section;
+
 			xref_stream = indirect_obj;
 			indirect_obj = int_ >> int_ >> lit("obj") >> object >> lit("endobj");
+
+			xref_section = lit("xref") >> *xref_subsection[yak::spirit::append(boost::phoenix::at_c<0>(_val),_1)] >> trailer_dic;
+			xref_subsection = qi::omit[int_[_a = _1] >> int_[_b = _1]] >> qi::repeat(_b)[xref_entry(_a)];
+			xref_entry = (int_ >> int_ >> char_)[_val=convert2xref_entry(_1, _2, _3, _r1)];
+			trailer_dic = lit("trailer") >> object;
+
+			xref.name("xref");
+			xref_stream.name("xref_stream");
+			indirect_obj.name("indirect_obj");
+			xref_section.name("xref_section");
+			xref_subsection.name("xref_subsection");
+			xref_entry.name("xref_entry");
+			trailer_dic.name("trailer_dic");
+
+//			qi::debug(xref);
 		}
 		qi::rule<Iterator,yak::pdf::xref_section(), skip_normal_expr_type> xref;
 		qi::rule<Iterator,yak::pdf::xref_section(), skip_normal_expr_type> xref_stream;
 		qi::rule<Iterator,yak::pdf::xref_section(), skip_normal_expr_type> xref_table;
 		qi::rule<Iterator,yak::pdf::indirect_obj(), skip_normal_expr_type> indirect_obj;
 		object_parser<Iterator> object;
+		qi::rule<Iterator, yak::pdf::xref_section(), skip_normal_expr_type> xref_section;
+		qi::rule<Iterator, yak::pdf::xref_table(), skip_normal_expr_type, qi::locals<int, int> > xref_subsection;
+		qi::rule<Iterator, std::pair<int,yak::pdf::xref_entry>(int), skip_normal_expr_type> xref_entry;
+		qi::rule<Iterator, dictionary(), skip_normal_expr_type> trailer_dic;
 	};
 
 	template <typename Iterator>
@@ -323,12 +368,8 @@ namespace yak { namespace pdf {
 			first = first_;
 			last = last_;
 			int offset = get_xref_offset();
-std::cerr << offset << std::endl;
 			read_xref(offset);
-yak::pdf::output_visitor ov(std::cerr); ov(xref.trailer_dic);
-for(xref_table::iterator it = xref.entries.begin(); it != xref.entries.end();++it) {
-	std::cerr << it->first << ':' << it->second.type << ':' << it->second.generation << ':' << it->second.offset << std::endl;
-}
+std::cerr << xref << std::endl;
 		}
 	public:
 		pdf_reader(Iterator first, Iterator last)

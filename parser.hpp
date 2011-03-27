@@ -303,6 +303,13 @@ namespace yak { namespace pdf {
 		{
 		}
 	};
+	class unsupported_pdf : public std::runtime_error
+	{
+	public:
+		explicit unsupported_pdf (const std::string& what_arg) : std::runtime_error(what_arg)
+		{
+		}
+	};
 
 	template<typename Iterator>
 	class pdf_reader
@@ -335,7 +342,7 @@ for(xref_table::iterator it = xref.entries.begin(); it != xref.entries.end();++i
 			xref_parser<Iterator> g;
 			bool r = phrase_parse(first_, last, g, skip_normal, xref);
 
-			if (!r) throw 1; // TODO proper exception
+			if (!r) throw invalid_pdf("Can't read xref section.");
 		}
 		typedef std::reverse_iterator<Iterator> RIterator;
 		RIterator skip_ws(RIterator first, RIterator last)

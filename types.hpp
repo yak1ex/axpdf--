@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <stdexcept>
 
 #if BOOST_VERSION <= 104601
 namespace boost {
@@ -131,7 +132,7 @@ namespace yak { namespace pdf {
 	{
 		if(dic.count(n) && boost::get<T>(&dic.find(n)->second))
 			return boost::get<T>(dic.find(n)->second);
-		throw 1; // TODO: throw proper exception
+		throw std::runtime_error("Internal error: Can't get value from object.");
 	}
 	template<typename T>
 	inline const T& get_value(const dictionary &dic, const name &n, const T& def)

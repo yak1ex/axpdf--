@@ -408,8 +408,16 @@ std::cerr << ref.number << ' ' << ref.generation << " R -> " << ent.offset << st
 		const object& get(int number, int generation = 0) const {
 			return get(indirect_ref(number, generation));
 		}
-		const object& get_root() const {
-			return get(get_value<indirect_ref>(xref.trailer_dic, name("Root")));
+		template<typename T>
+		const T& get(const indirect_ref& ref) const {
+			return boost::get<T>(get(ref));
+		}
+		template<typename T>
+		const T& get(int number, int genration = 0) const {
+			return boost::get<T>(get(number, generation));
+		}
+		const dictionary& get_root() const {
+			return get<dictionary>(get_value<indirect_ref>(xref.trailer_dic, name("Root")));
 		}
 	private:
 		void read_xref(int offset)

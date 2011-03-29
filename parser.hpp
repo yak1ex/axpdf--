@@ -377,7 +377,7 @@ std::cerr << xref << std::endl;
 			init(first, last);
 		}
 		const object& resolve(const object& obj) const {
-			if(indirect_ref *p = boost::get<indirect_ref>(&obj)) {
+			if(const indirect_ref *p = boost::get<indirect_ref>(&obj)) {
 				return get(*p);
 			} else {
 				return obj;

@@ -376,6 +376,41 @@ std::cerr << xref << std::endl;
 		{
 			init(first, last);
 		}
+		const object& resolve(const object& obj) const {
+			if(indirect_ref *p = boost::get<indirect_ref>(&obj)) {
+				return get(*p);
+			} else {
+				return obj;
+			}
+		}
+		const object& get(const indirect_ref& ref) const {
+			if(!objects.count(ref)) {
+				xref_table::const_iterator i = xref.entries.find(ref.number);
+				if(i == xref.entries.end()) {
+					throw invalid_pdf("Non-existent object requested.");
+				}
+				const xref_entry& ent = i->second;
+				if(ent.type == XREF_COMPRESSED) {
+					throw unsupported_pdf("Can't read compressed object yet.");
+				}
+				if(ent.type == XREF_FREE) {
+					throw invalid_pdf("Free object requested.");
+				}
+std::cerr << ref.number << ' ' << ref.generation << " R -> " << ent.offset << std::endl;
+				Iterator first_(first + ent.offset);
+				object_parser<Iterator> g;
+				bool r = phrase_parse(first_, last, qi::omit[qi::int_ >> qi::int_] >> qi::lit("obj") >> g >> qi::lit("endobj"), skip_normal, objects[ref]);
+
+				if (!r) throw invalid_pdf("Can't read object.");
+			}
+			return objects[ref];
+		}
+		const object& get(int number, int generation = 0) const {
+			return get(indirect_ref(number, generation));
+		}
+		const object& get_root() const {
+			return get(get_value<indirect_ref>(xref.trailer_dic, name("Root")));
+		}
 	private:
 		void read_xref(int offset)
 		{
@@ -439,7 +474,7 @@ std::cerr << xref << std::endl;
 			return index;
 		}
 
-		std::map<indirect_ref, object> objects;
+		mutable std::map<indirect_ref, object> objects;
 		xref_section xref;
 		Iterator first, last;
 	};

@@ -26,6 +26,10 @@ BOOST_FUSION_DEFINE_STRUCT(
 
 namespace yak { namespace pdf {
 
+	inline bool operator<(const indirect_ref &r1, const indirect_ref &r2)
+	{
+		return r1.number < r2.number || r1.number == r2.number && r1.generation < r2.generation;
+	}
 	struct name
 	{
 		std::string value;

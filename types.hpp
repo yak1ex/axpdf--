@@ -95,12 +95,22 @@ BOOST_FUSION_DEFINE_STRUCT(
 	(yak::pdf::dictionary, trailer_dic)
 )
 
+// type == XREF_FREE:
+//   offset:     index of next free object
+//   generation: generation for reused
+// type == XREF_USED:
+//   offset:     offset
+//   generation: generation
+// type == XREF_COMPRESSED
+//   offset:     compressed stream object number
+//   generation: index in the object stream
+
 BOOST_FUSION_DEFINE_STRUCT(
 	(yak)(pdf),
 	xref_entry,
 	(yak::pdf::xref_type, type)
-	(int, generation)
 	(int, offset)
+	(int, generation)
 )
 
 namespace yak { namespace pdf {

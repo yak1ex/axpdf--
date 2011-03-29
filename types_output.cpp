@@ -36,7 +36,7 @@ namespace yak { namespace pdf {
 
 		os << "xref" << std::endl;
 		for(xref_table::const_iterator it = xs.entries.begin(); it != xs.entries.end();++it) {
-			os << it->first << ':' << it->second.type << ':' << it->second.generation << ':' << it->second.offset << std::endl;
+			os << it->first << ':' << it->second.type << ':' << it->second.offset << ':' << it->second.generation << std::endl;
 		}
 
 		return os;

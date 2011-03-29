@@ -73,9 +73,9 @@ namespace boost { namespace spirit { namespace traits {
 				int size = boost::get<int>(*it++);
 				for(int i = 0; i < size; ++i) {
 					int type = read_bin(*pis, w_type);
-					int generation = read_bin(*pis, w_info1);
-					int offset = read_bin(*pis, w_info2);
-					yak::pdf::xref_entry ent(static_cast<yak::pdf::xref_type>(type), generation, offset);
+					int offset = read_bin(*pis, w_info1);
+					int generation = read_bin(*pis, w_info2);
+					yak::pdf::xref_entry ent(static_cast<yak::pdf::xref_type>(type), offset, generation);
 					attr.entries.insert(std::make_pair(first + i, ent));
 				}
 			}
@@ -221,8 +221,8 @@ namespace yak { namespace pdf {
 				}
 				return std::pair<int, yak::pdf::xref_entry>(cur++, yak::pdf::xref_entry(
 					c == 'f' ? XREF_FREE : XREF_USED,
-					n2,
-					n1
+					n1,
+					n2
 				));
 			}
 		};

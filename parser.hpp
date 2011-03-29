@@ -383,6 +383,19 @@ std::cerr << xref << std::endl;
 				return obj;
 			}
 		}
+		template<typename T>
+		const T& resolve(const object& obj) const {
+			return boost::get<T>(resolve(obj));
+		}
+		const object& resolve(const dictionary& dic, const name &n) const {
+			if(dic.count(n)) {
+				return resolve(dic.find(n)->second);
+			} else throw std::runtime_error("Internal error: Can't get value from object.");
+		}
+		template<typename T>
+		const T& resolve(const dictionary& dic, const name &n) const {
+			return boost::get<T>(resolve(dic, n));
+		}
 		const object& get(const indirect_ref& ref) const {
 			if(!objects.count(ref)) {
 				xref_table::const_iterator i = xref.entries.find(ref.number);

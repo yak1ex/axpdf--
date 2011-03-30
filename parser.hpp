@@ -404,7 +404,7 @@ std::cerr << xref << std::endl;
 				}
 				const xref_entry& ent = i->second;
 				if(ent.type == XREF_COMPRESSED) {
-					throw unsupported_pdf("Can't read compressed object yet.");
+					return get_compressed(ref, ent);
 				}
 				if(ent.type == XREF_FREE) {
 					throw invalid_pdf("Free object requested.");
@@ -426,7 +426,7 @@ std::cerr << ref.number << ' ' << ref.generation << " R -> " << ent.offset << st
 			return boost::get<T>(get(ref));
 		}
 		template<typename T>
-		const T& get(int number, int genration = 0) const {
+		const T& get(int number, int generation = 0) const {
 			return boost::get<T>(get(number, generation));
 		}
 		const dictionary& get_root() const {
@@ -494,8 +494,42 @@ std::cerr << ref.number << ' ' << ref.generation << " R -> " << ent.offset << st
 			rfirst = res.first;
 			return index;
 		}
+		bool is_set_offsets(const indirect_ref& ref) const {
+			return offsets.count(ref) != 0;
+		}
+		void set_offsets(const indirect_ref& ref) const {
+			const stream &s = get<stream>(ref);
+			if(!has_value(s.dic, name("Type"), name("ObjStm")))
+				throw invalid_pdf("Object stream reading requested for not object stream.");
+			std::auto_ptr<std::istream> pis = yak::pdf::decoder::create_decoder(s);
+			int n = get_value<int>(s.dic, name("N"));
+			offsets[ref].resize(n);
+			int dummy;
+			for(int i = 0; i < n; ++i) {
+				*pis >> dummy >> offsets[ref][i];
+				offsets[ref][i] += get_value<int>(s.dic, name("First"));
+			}
+		}
+		const object& get_compressed(const indirect_ref& ref, const xref_entry &ent) const {
+			indirect_ref ref_comp(ent.offset, 0);
+			if(!is_set_offsets(ref_comp)) set_offsets(ref_comp);
+
+			const stream &s = get<stream>(ent.offset);
+			std::string str;
+			yak::pdf::decoder::get_decoded_result(s, str);
+			typedef std::string::iterator Iterator2;
+			object_parser<Iterator2> g;
+			Iterator2 first_ = str.begin() + offsets.find(ref_comp)->second[ent.generation];
+			Iterator2 last_ = str.end();
+			bool r = phrase_parse(first_, last_, g, skip_normal, objects[ref]);
+
+			if (!r) throw invalid_pdf("Can't read compressed object.");
+
+			return objects[ref];
+		}
 
 		mutable std::map<indirect_ref, object> objects;
+		mutable std::map<indirect_ref, std::vector<int> > offsets;
 		xref_section xref;
 		Iterator first, last;
 	};

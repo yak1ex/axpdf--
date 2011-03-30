@@ -369,7 +369,6 @@ namespace yak { namespace pdf {
 			last = last_;
 			int offset = get_xref_offset();
 			read_xref(offset);
-std::cerr << xref << std::endl;
 		}
 	public:
 		pdf_reader(Iterator first, Iterator last)
@@ -409,7 +408,6 @@ std::cerr << xref << std::endl;
 				if(ent.type == XREF_FREE) {
 					throw invalid_pdf("Free object requested.");
 				}
-std::cerr << ref.number << ' ' << ref.generation << " R -> " << ent.offset << std::endl;
 				Iterator first_(first + ent.offset);
 				object_parser<Iterator> g;
 				bool r = phrase_parse(first_, last, qi::omit[qi::int_ >> qi::int_] >> qi::lit("obj") >> g >> qi::lit("endobj"), skip_normal, objects[ref]);

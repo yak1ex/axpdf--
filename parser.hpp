@@ -431,13 +431,34 @@ namespace yak { namespace pdf {
 			return get<dictionary>(get_value<indirect_ref>(xref.trailer_dic, name("Root")));
 		}
 	private:
-		void read_xref(int offset)
+		void read_xref(int offset) // TODO: consider exception safety
 		{
-			Iterator first_(first + offset);
 			xref_parser<Iterator> g;
-			bool r = phrase_parse(first_, last, g, skip_normal, xref);
 
-			if (!r) throw invalid_pdf("Can't read xref section.");
+			{
+				Iterator first_(first + offset);
+				bool r = phrase_parse(first_, last, g, skip_normal, xref);
+
+				if (!r) throw invalid_pdf("Can't read xref section.");
+			}
+
+			if(has_key(xref.trailer_dic, name("Prev"))) {
+				while(1) {
+					xref_section xref_temp;
+					Iterator first_(first + offset);
+
+					bool r = phrase_parse(first_, last, g, skip_normal, xref_temp);
+
+					if (!r) throw invalid_pdf("Can't read xref section.");
+
+					xref.entries.insert(xref_temp.entries.begin(), xref_temp.entries.end());
+					if(has_key(xref_temp.trailer_dic, name("Prev"))) {
+						offset = resolve<int>(xref_temp.trailer_dic, name("Prev"));
+					} else {
+						break;
+					}
+				}
+			}
 		}
 		typedef std::reverse_iterator<Iterator> RIterator;
 		RIterator skip_ws(RIterator first, RIterator last)

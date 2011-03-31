@@ -2,6 +2,7 @@
 
 #include <iomanip>
 #include <map>
+#include <set>
 #include <vector>
 
 #include <cstdio>
@@ -93,50 +94,60 @@ static INT SetArchiveInfo(const std::vector<SPI_FILEINFO> &v, HLOCAL *lphInf)
 	return SPI_ERR_NO_ERROR;
 }
 
-static INT CreateArchiveInfo(std::vector<SPI_FILEINFO> &v1, std::vector<Data> &v2, const yak::pdf::pdf_data &pd)
+static INT CreateArchiveInfo(
+	std::vector<SPI_FILEINFO> &v1,
+	std::vector<Data> &v2,
+	std::set<yak::pdf::indirect_ref> &set,
+	const yak::pdf::pdf_reader<LPSTR> &pr,
+	const yak::pdf::dictionary &dic
+)
 {
-	using yak::pdf::name;
-	using yak::pdf::indirect_ref;
-	using yak::pdf::dictionary;
-	using yak::pdf::stream;
-	using yak::pdf::is_type;
 	using yak::pdf::has_value;
+	using yak::pdf::has_key;
+	using yak::pdf::name;
+	using yak::pdf::array;
+	using yak::pdf::object;
+	using yak::pdf::dictionary;
+	using yak::pdf::indirect_ref;
+	using yak::pdf::stream;
 
-	DWORD idx = 0;
-	v1.clear(); v2.clear();
-	typedef std::vector<yak::pdf::indirect_obj>::const_iterator iterator;
-	for(iterator i = pd.objects.begin(); i != pd.objects.end(); ++i) {
-		if(is_type<stream>(i->value)) {
-			const stream &s = boost::get<stream>(i->value);
-			if(has_value(s.dic, name("Type"), name("XObject")) &&
-				has_value(s.dic, name("Subtype"), name("Image")) &&
-				has_value(s.dic, name("Filter"), name("DCTDecode"))) {
-				int length = 0;
-				const yak::pdf::object &obj = s.dic.find(name("Length"))->second;
-				if(is_type<int>(obj)) {
-					length = boost::get<int>(obj);
-				} else if(is_type<indirect_ref>(obj)) {
-					indirect_ref r = boost::get<indirect_ref>(obj);
-					for(iterator j = pd.objects.begin(); j != pd.objects.end(); ++j) {
-						if(j->number == r.number && j->generation == r.generation) {
-							length = boost::get<int>(j->value);
-							break;
+	if(has_value(dic, name("Type"), name("Pages"))) {
+		const array & arr = pr.resolve<array>(dic, name("Kids"));
+		BOOST_FOREACH(const object &obj, arr) {
+			CreateArchiveInfo(v1, v2, set, pr, pr.resolve<dictionary>(obj));
+		}
+	} else if(has_value(dic, name("Type"), name("Page"))) {
+		if(has_key(dic, name("Resources"))) {
+			std::cout << pr.resolve(dic, name("Resources")) << std::endl;
+			const dictionary &res = pr.resolve<dictionary>(dic, name("Resources"));
+			if(has_key(res, name("XObject"))) {
+				const dictionary & xobj = pr.resolve<dictionary>(res, name("XObject"));
+				BOOST_FOREACH(const dictionary::value_type &v, xobj) {
+					const indirect_ref &ref = boost::get<indirect_ref>(v.second);
+					if(!set.count(ref)) {
+						const stream &s = pr.get<stream>(ref);
+						if(has_value(s.dic, name("Type"), name("XObject")) && 
+						   has_value(s.dic, name("Subtype"), name("Image")) &&
+						   has_value(s.dic, name("Filter"), name("DCTDecode"))) {
+							int length = pr.resolve<int>(s.dic, name("Length"));
+							SPI_FILEINFO info = {
+								{ 'D', 'C', 'T' },
+								v1.size(),
+								length,
+								length
+							};
+							wsprintf(info.filename, "%08d.jpg", v1.size());
+							v1.push_back(info);
+							Data d1;
+							v2.push_back(d1); v2.back().assign(s.data.begin(), s.data.begin() + length);
 						}
+						set.insert(ref);
 					}
 				}
-				SPI_FILEINFO info = {
-					{ 'D', 'C', 'T' },
-					idx,
-					length,
-					length
-				};
-				wsprintf(info.filename, "%08d.jpg", idx);
-				v1.push_back(info);
-				Data d1;
-				v2.push_back(d1); v2.back().assign(s.data.begin(), s.data.begin() + length);
-				++idx;
 			}
 		}
+	} else {
+		throw yak::pdf::invalid_pdf("Unknown type in page tree");
 	}
 	return SPI_ERR_NO_ERROR;
 }
@@ -154,20 +165,25 @@ ods << "GetArchiveInfoImp(" << std::string(buf, std::min<DWORD>(len, 1024)) << '
 		}
 	}
 
-	yak::pdf::pdf_data pd;
-	if(!yak::pdf::parse_pdf(buf, buf+len, pd)) {
-		return SPI_ERR_BROKEN_DATA;
-	}
-	std::vector<SPI_FILEINFO> v1;
-	std::vector<std::vector<char> > v2;
-	CreateArchiveInfo(v1, v2, pd);
-	if(lphInf) SetArchiveInfo(v1, lphInf);
+	try {
+		yak::pdf::pdf_reader<LPSTR> pr(buf, buf+len);
+		std::vector<SPI_FILEINFO> v1;
+		std::vector<std::vector<char> > v2;
+		std::set<yak::pdf::indirect_ref> set;
+		CreateArchiveInfo(v1, v2, set, pr, pr.resolve<yak::pdf::dictionary>(pr.get_root(), yak::pdf::name("Pages")));
+		if(lphInf) SetArchiveInfo(v1, lphInf);
 
-	if(filename != NULL) {
-		ods << "GetArchiveInfoImp - Filename specified" << std::endl;
-		Key key(make_key(filename));
-		g_cache[key].first.swap(v1);
-		g_cache[key].second.swap(v2);
+		if(filename != NULL) {
+			ods << "GetArchiveInfoImp - Filename specified" << std::endl;
+			Key key(make_key(filename));
+			g_cache[key].first.swap(v1);
+			g_cache[key].second.swap(v2);
+		}
+	} catch(std::exception &e) {
+		MessageBox(NULL, e.what(), "axpdf--.spi", MB_OK);
+		return SPI_ERR_BROKEN_DATA;
+	} catch(...) {
+		return SPI_ERR_BROKEN_DATA;
 	}
 
 	return SPI_ERR_NO_ERROR;

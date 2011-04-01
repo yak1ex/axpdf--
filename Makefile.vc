@@ -57,4 +57,4 @@ test3.exe: test3.$(OBJEXT) decoder.$(OBJEXT) types_output.$(OBJEXT)
 	$(RC) $<
 
 clean:
-	del *.$(OBJEXT) *.spi
+	del *.$(OBJEXT) *.$(RESEXT) *.lib *.exp *.pdb *.spi *.exe *.exe.stackdump

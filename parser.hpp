@@ -430,6 +430,9 @@ namespace yak { namespace pdf {
 		const dictionary& get_root() const {
 			return get<dictionary>(get_value<indirect_ref>(xref.trailer_dic, name("Root")));
 		}
+		const dictionary& get_trailer() const {
+			return xref.trailer_dic;
+		}
 	private:
 		void read_xref(int offset) // TODO: consider exception safety
 		{

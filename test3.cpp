@@ -40,6 +40,10 @@ int main(int argc, char **argv)
 	try {
 		std::set<yak::pdf::indirect_ref> set;
 		yak::pdf::pdf_file_reader pr(argv[1]);
+		std::cout << pr.get_trailer();
+		if(yak::pdf::has_key(pr.get_trailer(), yak::pdf::name("Encrypt"))) {
+			std::cout << pr.resolve(pr.get_trailer(), yak::pdf::name("Encrypt"));
+		}
 		std::cout << pr.get_root() << std::endl;
 		traverse(set, pr, pr.resolve<yak::pdf::dictionary>(pr.get_root(), yak::pdf::name("Pages")));
 	} catch(std::exception &e) {

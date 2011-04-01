@@ -167,6 +167,9 @@ ods << "GetArchiveInfoImp(" << std::string(buf, std::min<DWORD>(len, 1024)) << '
 
 	try {
 		yak::pdf::pdf_reader<LPSTR> pr(buf, buf+len);
+		if(yak::pdf::has_key(pr.get_trailer(), yak::pdf::name("Encrypt"))) {
+			throw yak::pdf::unsupported_pdf("Protected PDF is not supported.");
+		}
 		std::vector<SPI_FILEINFO> v1;
 		std::vector<std::vector<char> > v2;
 		std::set<yak::pdf::indirect_ref> set;

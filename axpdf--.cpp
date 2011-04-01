@@ -19,6 +19,7 @@
 
 #include "parser.hpp"
 #include "Spi_api.h"
+#include "resource.h"
 #define DEBUG
 #include "odstream.hpp"
 
@@ -313,4 +314,114 @@ INT PASCAL GetFile(LPSTR buf, LONG len, LPSTR dest, UINT flag, FARPROC prgressCa
 	}
 	ods << "GetFile(): position not found" << std::endl;
 	return SPI_ERR_INTERNAL_ERROR;
+}
+
+static LRESULT CALLBACK AboutDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+	switch (msg) {
+		case WM_INITDIALOG:
+			return FALSE;
+		case WM_COMMAND:
+			switch (LOWORD(wp)) {
+				case IDOK:
+					EndDialog(hDlgWnd, IDOK);
+					break;
+				case IDCANCEL:
+					EndDialog(hDlgWnd, IDCANCEL);
+					break;
+				default:
+					return FALSE;
+			}
+		default:
+			return FALSE;
+	}
+	return TRUE;
+}
+
+static std::string g_sIniFileName; // ini ファイル名
+extern bool g_fDuplicate;
+
+void LoadFromIni()
+{
+	g_fDuplicate = GetPrivateProfileInt("axpdf--", "duplicate", 1, g_sIniFileName.c_str());
+}
+
+void SaveToIni()
+{
+	WritePrivateProfileString("axpdf--", "duplicate", g_fDuplicate ? "1" : "0", g_sIniFileName.c_str());
+}
+
+void SetIniFileName(HANDLE hModule)
+{
+    std::vector<char> vModulePath(1024);
+    size_t nLen = GetModuleFileName((HMODULE)hModule, &vModulePath[0], (DWORD)vModulePath.size());
+    vModulePath.resize(nLen + 1);
+    // 本来は2バイト文字対策が必要だが、プラグイン名に日本語はないと判断して手抜き
+    while (!vModulePath.empty() && vModulePath.back() != '\\') {
+        vModulePath.pop_back();
+    }
+
+    g_sIniFileName = &vModulePath[0];
+    g_sIniFileName +=".ini";
+}
+
+void UpdateDialogItem(HWND hDlgWnd)
+{
+	SendDlgItemMessage(hDlgWnd, IDC_DONT_DUPLICATE, BM_SETCHECK, g_fDuplicate ? BST_UNCHECKED : BST_CHECKED, 0);
+}
+
+bool UpdateValue(HWND hDlgWnd)
+{
+	g_fDuplicate = (SendDlgItemMessage(hDlgWnd, IDC_DONT_DUPLICATE, BM_GETCHECK, 0, 0) != BST_CHECKED);
+	return true;
+}
+
+static LRESULT CALLBACK ConfigDlgProc(HWND hDlgWnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+	switch (msg) {
+		case WM_INITDIALOG:
+			UpdateDialogItem(hDlgWnd);
+			return TRUE;
+		case WM_COMMAND:
+			switch (LOWORD(wp)) {
+				case IDOK:
+					if (UpdateValue(hDlgWnd)) {
+						SaveToIni();
+						EndDialog(hDlgWnd, IDOK);
+					}
+					break;
+				case IDCANCEL:
+					EndDialog(hDlgWnd, IDCANCEL);
+					break;
+				default:
+					return FALSE;
+			}
+		default:
+			return FALSE;
+	}
+	return TRUE;
+}
+
+static HINSTANCE g_hInstance;
+
+INT PASCAL ConfigurationDlg(HWND parent, INT fnc)
+{
+	if (fnc == 0) { // About
+		DialogBox((HINSTANCE)g_hInstance, MAKEINTRESOURCE(IDD_ABOUT_DIALOG), parent, (DLGPROC)AboutDlgProc);
+	} else { // Configuration
+		DialogBoxParam((HINSTANCE)g_hInstance, MAKEINTRESOURCE(IDD_CONFIG_DIALOG), parent, (DLGPROC)ConfigDlgProc, 0);
+	}
+	return 0;
+}
+
+BOOL APIENTRY DllMain(HANDLE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
+{
+	switch (ul_reason_for_call) {
+		case DLL_PROCESS_ATTACH:
+			g_hInstance = (HINSTANCE)hModule;
+			SetIniFileName(hModule);
+			LoadFromIni();
+			break;
+	}
+	return TRUE;
 }

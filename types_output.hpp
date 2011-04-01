@@ -1,3 +1,11 @@
+/***********************************************************************/
+/*                                                                     */
+/* types_output.hpp: Header file for stream output for PDF parser      */
+/*     Written by Yak!                                                 */
+/*                                                                     */
+/*     $Id$                  */
+/*                                                                     */
+/***********************************************************************/
 #ifndef YAK_PDF_TYPES_OUTPUT_HPP
 #define YAK_PDF_TYPES_OUTPUT_HPP
 

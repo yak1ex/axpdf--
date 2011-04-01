@@ -1,3 +1,11 @@
+/***********************************************************************/
+/*                                                                     */
+/* axpdf--.cpp: Source file for exported functions of PDF susie plugin */
+/*     Written by Yak!                                                 */
+/*                                                                     */
+/*     $Id$                  */
+/*                                                                     */
+/***********************************************************************/
 #include <windows.h>
 
 #include <iomanip>

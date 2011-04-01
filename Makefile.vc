@@ -1,3 +1,12 @@
+########################################################################
+#
+# Makefile.vc: Makefile for axpdf--.spi for Visual C++
+#     Written by Yak!
+#
+#     $Id$
+#
+########################################################################
+
 CC = cl
 CFLAGS  = -nologo -MD -W3 -O2 -Oy- -Zi -EHsc -I c:/usr/local/include
 OBJEXT = obj

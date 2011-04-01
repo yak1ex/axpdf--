@@ -1,3 +1,11 @@
+/***********************************************************************/
+/*                                                                     */
+/* decoder.cpp: Header file for stream decoder of PDF parser           */
+/*     Written by Yak!                                                 */
+/*                                                                     */
+/*     $Id$                  */
+/*                                                                     */
+/***********************************************************************/
 #ifndef YAK_PDF_DECODER_HPP
 #define YAK_PDF_DECODER_HPP
 

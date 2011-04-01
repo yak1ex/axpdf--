@@ -1,3 +1,11 @@
+/***********************************************************************/
+/*                                                                     */
+/* spirit_helper.hpp: Header file for utility routine for Boost.Spirit */
+/*     Written by Yak!                                                 */
+/*                                                                     */
+/*     $Id$                  */
+/*                                                                     */
+/***********************************************************************/
 #ifndef YAK_SPIRIT_HELPER_HPP
 #define YAK_SPIRIT_HELPER_HPP
 

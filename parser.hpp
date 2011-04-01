@@ -1,3 +1,11 @@
+/***********************************************************************/
+/*                                                                     */
+/* parser.hpp: Header file for PDF parser                              */
+/*     Written by Yak!                                                 */
+/*                                                                     */
+/*     $Id$                  */
+/*                                                                     */
+/***********************************************************************/
 #ifndef YAK_PDF_PDFPARSER_HPP
 #define YAK_PDF_PDFPARSER_HPP
 

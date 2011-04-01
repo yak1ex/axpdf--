@@ -1,12 +1,9 @@
 /***********************************************************************/
 /*                                                                     */
 /* odstream.cpp: Source file for stream class using OutputDebugString  */
+/*     Written by Yak!                                                 */
 /*                                                                     */
-/*               Copyright (c) Yak! 2005 All rights reserved.          */
-/*                                                                     */
-/*   $URL$               */
-/*  $Date$              */
-/*   $Rev$                                                        */
+/*     $Id$                  */
 /*                                                                     */
 /***********************************************************************/
 

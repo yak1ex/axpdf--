@@ -3,7 +3,7 @@
 /* odstream.hpp: Header file for stream class using OutputDebugString  */
 /*     Written by Yak!                                                 */
 /*                                                                     */
-/*     $Id$                  */
+/*     $Id$                 */
 /*                                                                     */
 /***********************************************************************/
 

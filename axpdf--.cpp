@@ -3,7 +3,7 @@
 /* axpdf--.cpp: Source file for exported functions of PDF susie plugin */
 /*     Written by Yak!                                                 */
 /*                                                                     */
-/*     $Id$                  */
+/*     $Id$                 */
 /*                                                                     */
 /***********************************************************************/
 #include <windows.h>

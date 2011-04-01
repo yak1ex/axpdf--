@@ -1,3 +1,12 @@
+########################################################################
+#
+# Makefile: Makefile for axpdf--.spi for gcc, currently not working
+#     Written by Yak!
+#
+#     $Id$
+#
+########################################################################
+
 #CXX = i686-w64-mingw32-g++
 #CXXFLAGS = -Wall -O2 -I /var/tmp/boost_1_45_0
 

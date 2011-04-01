@@ -3,7 +3,7 @@
 /* types.hpp: Header file for type and helper function of PDF parser   */
 /*     Written by Yak!                                                 */
 /*                                                                     */
-/*     $Id$                  */
+/*     $Id$                 */
 /*                                                                     */
 /***********************************************************************/
 #ifndef YAK_PDF_TYPES_HPP

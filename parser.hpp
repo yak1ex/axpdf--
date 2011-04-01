@@ -3,7 +3,7 @@
 /* parser.hpp: Header file for PDF parser                              */
 /*     Written by Yak!                                                 */
 /*                                                                     */
-/*     $Id$                  */
+/*     $Id$                 */
 /*                                                                     */
 /***********************************************************************/
 #ifndef YAK_PDF_PDFPARSER_HPP

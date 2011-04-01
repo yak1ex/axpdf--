@@ -3,7 +3,7 @@
 /* decoder.cpp: Source file for stream decoder of PDF parser           */
 /*     Written by Yak!                                                 */
 /*                                                                     */
-/*     $Id$                  */
+/*     $Id$                 */
 /*                                                                     */
 /***********************************************************************/
 #include <fstream>

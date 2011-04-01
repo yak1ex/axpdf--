@@ -1,3 +1,11 @@
+/***********************************************************************/
+/*                                                                     */
+/* types_output.hpp: Source file for stream output for PDF parser      */
+/*     Written by Yak!                                                 */
+/*                                                                     */
+/*     $Id$                 */
+/*                                                                     */
+/***********************************************************************/
 #include "types_output.hpp"
 
 namespace yak { namespace pdf {

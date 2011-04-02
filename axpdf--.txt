@@ -1,0 +1,115 @@
+----------------------------------------------------------------------------
+                       axpdf--.spi v0.01 (2011/04/02)
+----------------------------------------------------------------------------
+                                                        2011/04/02 Yak!
+
+****************************************************************************
+ 本バージョンは beta 版です。まだ大きなバグが残っている可能性が高いです。
+****************************************************************************
+
+****************************************************************************
+ 本プラグインは PDF 中にある画像オブジェクトを抽出する Susie plugin です。
+ 文字や図形のレンダリングは行いませんし、今後私自信が行う予定もありません。
+****************************************************************************
+
+1.概要
+
+  PDF に対応した Susie plugin として MangaMeeya とともに配布されていた
+  PDF.dll が存在していましたがソースコードのライセンスの面から配布停止と
+  なってしまっています。
+  本プラグインはソースコードのライセンス的に問題のない PDF プラグインを
+  作成しようという目標の下、作成したものです。
+  ただし、時間と能力の都合上、画像ビューワの最小ユースケースとして PDF 中の
+  画像オブジェクトを抜き出すことのみを目的としています。
+  また、現在のバージョンでは JPEG 画像のみが対象となっています。
+
+2.内容物
+
+  axpdf--.spi: プラグイン本体
+  axpdf--.txt: ドキュメント(本文書)
+  source.zip:  ソースファイル一式
+
+3.動作環境
+
+  動作時に依存する DLL はありません。
+  Susie プラグイン用のディレクトリに入れてください。
+
+4.設定
+
+  PDF では複数のページから同一の画像オブジェクトを参照することができます。
+  この場合に、重複して画像を抽出したくない場合にはチェックボックスを有効に
+  してください。デフォルトは無効、つまり重複して抽出します。
+　設定ファイル axpdf--.spi.ini はプラグインと同じディレクトリに作成されます。
+
+5.動作確認環境
+
+  WindowsXP Professional SP3 + Core2 Duo T7600 + Mobility FireGL V5250
+  あふｗ v1.8b4 / Leeyes v2.6.0 / Hamana v1.48 / MassiGra v0.29
+
+6.コンパイル方法
+
+  以下の手順でコンパイルできます。
+  なお外部ライブラリでバイナリ作成に使用したバージョンは Boost 1.46.1、
+  zlib 1.2.5、使用コンパイラは Visual Studio 2010 です。
+
+  1) zlib の本家サイト(http://zlib.net/)より zlib ソースを取得、
+     ビルドします。
+  2) Boost の本家サイト(http://www.boost.org/)よりソースを取得して
+     zlib 有効でビルドします。
+     バイナリインストーラ http://www.boostpro.com/download で
+     インストールされるライブラリでは zlib 無効になっていますので
+     残念ながらビルドできません。
+     またソースコード内の Makefile.vc では
+  3) Visual Studio コマンドプロンプトを開いてソースの有るディレクトリ
+     に移動します。
+  4) Boost のパスに合わせて Makefile.vc を修正します。
+  5) nmake -f Makefile.vc でビルドできます。
+
+7.著作権・免責等
+
+  zlib ライブラリは zlib License で配布されています。
+  Boost ライブラリは Boost Software License で配布されています。
+
+　本ソフトウェアは zlib/libpng License で配布しています。
+
+  Copyright (C) 2011 Yak! / Yasutaka ATARASHI
+
+  This software is provided 'as-is', without any express or implied
+  warranty. In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+
+     1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+
+     2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+
+     3. This notice may not be removed or altered from any source
+     distribution.
+
+8.既知の不具合・仕様
+
+  ・保護された PDF から画像を抽出できない。
+    コピー、変更が許可されている場合でも現在のバージョンではできません。
+  ・現在のバージョンでは JPEG だけしか画像を抽出できない。
+  ・1 ページ内に複数の画像が存在する場合でもそれぞれ抽出する。
+    レンダリングしない、の延長線上の仕様です。
+
+9.連絡先
+  不具合、要望、感想等は Yak! <yak_ex@mx.scn.tv>、
+  Twitter アカウントは @yak_ex、掲示板 http://8904.teacup.com/yak_ex/bbs 等へ
+  お願いします。
+
+10.TODO
+  ・保護された PDF への対応。
+  ・JPEG 画像以外への対応。
+
+11.History
+  2011/04/02 (v0.01)
+    - 初版

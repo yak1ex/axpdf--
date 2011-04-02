@@ -228,8 +228,6 @@ namespace yak { namespace pdf {
 
 			std::pair<int, yak::pdf::xref_entry> operator()(int n1, int n2, char c, int start) const
 			{
-				static int prev_start = -1;
-				static int cur = -1;
 				if(prev_start != start) {
 					cur = prev_start = start;
 				}
@@ -239,10 +237,16 @@ namespace yak { namespace pdf {
 					n2
 				));
 			}
+			convert2xref_entry_impl(int &prev_start, int &cur) : prev_start(prev_start), cur(cur) {}
+		private:
+			int &prev_start;
+			int &cur;
 		};
+		int prev_start;
+		int cur;
 		boost::phoenix::function<convert2xref_entry_impl> convert2xref_entry;
 
-		xref_parser() : xref_parser::base_type(xref, "xref")
+		xref_parser() : xref_parser::base_type(xref, "xref"), prev_start(-1), cur(-1), convert2xref_entry(convert2xref_entry_impl(prev_start, cur))
 		{
 			using qi::lit;
 			using qi::int_;
@@ -268,6 +272,10 @@ namespace yak { namespace pdf {
 			trailer_dic.name("trailer_dic");
 
 //			qi::debug(xref);
+		}
+		void reset()
+		{
+			prev_start = cur = -1;
 		}
 		qi::rule<Iterator,yak::pdf::xref_section(), skip_normal_expr_type> xref;
 		qi::rule<Iterator,yak::pdf::xref_section(), skip_normal_expr_type> xref_stream;

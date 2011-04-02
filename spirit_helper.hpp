@@ -1,7 +1,11 @@
 /***********************************************************************/
 /*                                                                     */
 /* spirit_helper.hpp: Header file for utility routine for Boost.Spirit */
-/*     Written by Yak!                                                 */
+/*                                                                     */
+/*     Copyright (C) 2011 Yak! / Yasutaka ATARASHI                     */
+/*                                                                     */
+/*     This software is distributed under the terms of a zlib/libpng   */
+/*     License.                                                        */
 /*                                                                     */
 /*     $Id$                 */
 /*                                                                     */

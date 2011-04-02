@@ -1,7 +1,11 @@
 /***********************************************************************/
 /*                                                                     */
 /* decoder.cpp: Header file for stream decoder of PDF parser           */
-/*     Written by Yak!                                                 */
+/*                                                                     */
+/*     Copyright (C) 2011 Yak! / Yasutaka ATARASHI                     */
+/*                                                                     */
+/*     This software is distributed under the terms of a zlib/libpng   */
+/*     License.                                                        */
 /*                                                                     */
 /*     $Id$                 */
 /*                                                                     */

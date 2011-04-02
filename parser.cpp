@@ -1,7 +1,11 @@
 /***********************************************************************/
 /*                                                                     */
 /* parser.cpp: Source file for atcual parser part of PDF susie plugin  */
-/*     Written by Yak!                                                 */
+/*                                                                     */
+/*     Copyright (C) 2011 Yak! / Yasutaka ATARASHI                     */
+/*                                                                     */
+/*     This software is distributed under the terms of a zlib/libpng   */
+/*     License.                                                        */
 /*                                                                     */
 /*     $Id$                 */
 /*                                                                     */

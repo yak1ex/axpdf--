@@ -57,3 +57,6 @@ dist:
 	cp axpdf--.spi axpdf--.txt source.zip disttemp
 	(cd disttemp; strip axpdf--.spi; zip ../axpdf--$(VER).zip *)
 	-rm -rf disttemp
+
+tag:
+	git tag axpdf--$(VER)

@@ -61,7 +61,7 @@ static INT CreateArchiveInfo(
 						const stream &s = pr.get<stream>(ref);
 						if(has_value(s.dic, name("Type"), name("XObject")) && 
 						   has_value(s.dic, name("Subtype"), name("Image")) &&
-						   has_value(s.dic, name("Filter"), name("DCTDecode"))) {
+						   has_value_or_array(s.dic, name("Filter"), name("DCTDecode"))) {
 							int length = pr.resolve<int>(s.dic, name("Length"));
 							SPI_FILEINFO info = {
 								{ 'D', 'C', 'T' },

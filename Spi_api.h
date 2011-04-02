@@ -46,7 +46,7 @@ extern "C" {
 /* Type                                                                */
 /***********************************************************************/
 
-#include <pshpack1.h> /* Set alignment as 1 byte boundary. Probably, this is the most safe way for Windows environment */
+#include <pshpack1.h> /* Set alignment as 1 byte boundary. Probably, this is the safest way on Windows environment */
 typedef struct
 {
     BYTE  method[8];

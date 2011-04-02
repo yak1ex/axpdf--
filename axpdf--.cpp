@@ -118,7 +118,7 @@ INT GetArchiveInfoImp(LPSTR buf, DWORD len, HLOCAL *lphInf, LPSTR filename = NUL
 ods << "GetArchiveInfoImp(" << std::string(buf, std::min<DWORD>(len, 1024)) << ',' << len << ',' << lphInf << (filename ? filename : "NULL") << ')' << std::endl;
 
 	if(filename != NULL) {
-		ods << "GetArchiveInfoImp - Filename specified" << std::endl;
+		ods << "GetArchiveInfoImp - Filename specified: check cache" << std::endl;
 		Key key(make_key(filename));
 		if(g_cache.count(key) != 0) {
 			if(lphInf) SetArchiveInfo(g_cache[key].first, lphInf);
@@ -134,7 +134,7 @@ ods << "GetArchiveInfoImp(" << std::string(buf, std::min<DWORD>(len, 1024)) << '
 		if(lphInf) SetArchiveInfo(v1, lphInf);
 
 		if(filename != NULL) {
-			ods << "GetArchiveInfoImp - Filename specified" << std::endl;
+			ods << "GetArchiveInfoImp - Filename specified: set cache" << std::endl;
 			Key key(make_key(filename));
 			g_cache[key].first.swap(v1);
 			g_cache[key].second.swap(v2);

@@ -11,6 +11,8 @@
 #
 ########################################################################
 
+VER=0_01
+
 #CXX = i686-w64-mingw32-g++
 #CXXFLAGS = -Wall -O2 -I /var/tmp/boost_1_45_0
 
@@ -44,3 +46,14 @@ test3.exe: test3.cpp
 
 %.exe: %.o
 	$(LINK.cc) $^ -o $@
+
+dist:
+	-rm -rf source source.zip axpdf--$(VER).zip disttemp
+	mkdir source
+	git archive --worktree-attributes master | tar xf - -C source
+	(cd source; zip ../source.zip *)
+	-rm -rf source
+	mkdir disttemp
+	cp axpdf--.spi axpdf--.txt source.zip disttemp
+	(cd disttemp; strip axpdf--.spi; zip ../axpdf--$(VER).zip *)
+	-rm -rf disttemp

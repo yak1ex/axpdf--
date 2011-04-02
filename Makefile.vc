@@ -27,7 +27,9 @@ axpdf--.spi: $(AXPDF_OBJS) axpdf--vc.def
 
 all: axpdf--.spi pdf.exe test.exe test2.exe test3.exe
 
-axpdf--.$(OBJEXT): axpdf--.cpp spirit_helper.hpp parser.hpp types.hpp types_output.hpp decoder.hpp
+axpdf--.$(OBJEXT): axpdf--.cpp
+
+parser.$(OBJEXT): parser.cpp spirit_helper.hpp parser.hpp types.hpp types_output.hpp decoder.hpp
 
 odstream.$(OBJEXT): odstream.cpp odstream.hpp
 

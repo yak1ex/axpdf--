@@ -7,7 +7,7 @@
 /*     This software is distributed under the terms of a zlib/libpng   */
 /*     License.                                                        */
 /*                                                                     */
-/*     $Id$                  */
+/*     $Id$                 */
 /*                                                                     */
 /***********************************************************************/
 #include <windows.h>
@@ -35,7 +35,7 @@ CAPTION "About axpdf--.spi"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,48,42,50,14
-    LTEXT           "axpdf--.spi  v0.1 (2011/04/02)",IDC_STATIC,4,7,116,10
+    LTEXT           "axpdf--.spi  v0.01 (2011/04/02)",IDC_STATIC,4,7,116,10
     LTEXT           "PDF as an image container plugin",IDC_STATIC,22,17,123,12
     LTEXT           "Written by Yak!",IDC_STATIC,22,28,62,12
 END

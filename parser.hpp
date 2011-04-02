@@ -447,6 +447,9 @@ namespace yak { namespace pdf {
 		const dictionary& get_trailer() const {
 			return xref.trailer_dic;
 		}
+		const xref_section& get_xref() const {
+			return xref;
+		}
 	private:
 		void read_xref(int offset) // TODO: consider exception safety
 		{

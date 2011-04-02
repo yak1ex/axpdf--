@@ -154,6 +154,17 @@ namespace yak { namespace pdf {
 			boost::get<T>(dic.find(n)->second) == t;
 	}
 	template<typename T>
+	inline bool has_value_or_array(const dictionary &dic, const name &n, const T& t)
+	{
+		return dic.count(n) &&
+			((boost::get<T>(&dic.find(n)->second) &&
+			  boost::get<T>(dic.find(n)->second) == t) ||
+			 (boost::get<array>(&dic.find(n)->second) &&
+			  boost::get<array>(dic.find(n)->second).size() == 1 &&
+			  boost::get<T>(&boost::get<array>(dic.find(n)->second)[0]) &&
+			  boost::get<T>(boost::get<array>(dic.find(n)->second)[0]) == t));
+	}
+	template<typename T>
 	inline const T& get_value(const dictionary &dic, const name &n)
 	{
 		if(dic.count(n) && boost::get<T>(&dic.find(n)->second))

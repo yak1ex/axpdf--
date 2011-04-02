@@ -84,16 +84,11 @@ namespace yak { namespace pdf {
 		{
 			(*this)(s.dic);
 			os << "stream" << std::endl;
-			std::string str;
-			decoder::get_decoded_result(s, str);
-			bool flag = true;
-			for(std::size_t i=0;i<(std::min)(20U, str.size());++i) {
-				if(str[i] < 0x20U || str[i] > 0x7EU) {
-					flag = false;
-					break;
-				}
+			if(has_value(s.dic, name("Type"), name("ObjStm"))) {
+				std::string str;
+				decoder::get_decoded_result(s, str);
+				os << str;
 			}
-			if(flag) os << str;
 			os << "endstream" << std::endl;
 		}
 	};

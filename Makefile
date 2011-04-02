@@ -1,7 +1,11 @@
 ########################################################################
 #
 # Makefile: Makefile for axpdf--.spi for gcc, currently not working
-#     Written by Yak!
+#
+#     Copyright (C) 2011 Yak! / Yasutaka ATARASHI
+#
+#     This software is distributed under the terms of a zlib/libpng
+#     License.
 #
 #     $Id$
 #

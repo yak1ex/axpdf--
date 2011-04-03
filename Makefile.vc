@@ -20,7 +20,7 @@ LINK = $(LD) $(LDFLAGS) $(LIBS)
 RC = rc
 RESEXT = res
 
-AXPDF_OBJS = axpdf--.$(OBJEXT) parser.$(OBJEXT) decoder.$(OBJEXT) types_output.$(OBJEXT) odstream.$(OBJEXT) axpdf--.$(RESEXT)
+AXPDF_OBJS = axpdf--.$(OBJEXT) parser.$(OBJEXT) decoder.$(OBJEXT) types_output.$(OBJEXT) bmp_helper.$(OBJEXT) odstream.$(OBJEXT) axpdf--.$(RESEXT)
 
 axpdf--.spi: $(AXPDF_OBJS) axpdf--vc.def
 	$(LINK) -dll -out:$@ -def:axpdf--vc.def $(AXPDF_OBJS) User32.lib
@@ -38,6 +38,8 @@ pdf.$(OBJEXT): pdf.cpp spirit_helper.hpp parser.hpp util.hpp types.hpp types_out
 decoder.$(OBJEXT): decoder.cpp decoder.hpp types.hpp
 
 types_output.$(OBJEXT): types_output.cpp types_output.hpp decoder.hpp types.hpp
+
+bmp_helper.$(OBJEXT): bmp_helper.cpp bmp_helper.hpp
 
 pdf.exe: pdf.$(OBJEXT) decoder.$(OBJEXT) types_output.$(OBJEXT) 
 

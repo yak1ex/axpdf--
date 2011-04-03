@@ -20,12 +20,59 @@
 #include "Spi_api.h"
 
 #include "parser.hpp"
+#include "decoder.hpp"
+#include "bmp_helper.hpp"
+
+// TODO: Reconsider file separation
 
 typedef std::pair<std::string, unsigned long> Key;
 typedef std::vector<char> Data;
 typedef std::pair<std::vector<SPI_FILEINFO>, std::vector<Data> > Value;
 
 bool g_fDuplicate;
+
+static void CreateArchiveInfo_FlateDecode(
+	const yak::pdf::pdf_reader<LPSTR> &pr,
+	const yak::pdf::stream &s,
+	std::vector<SPI_FILEINFO> &v1,
+	std::vector<Data> &v2
+)
+{
+	using yak::pdf::has_value;
+	using yak::pdf::get_value;
+	using yak::pdf::has_value_or_array;
+	using yak::pdf::name;
+
+	// TODO: support just falling back to PNG
+
+	if(!has_value(s.dic, name("BitsPerComponent"), 8)) {
+		throw yak::pdf::unsupported_pdf("Not yet support unless BitsPerComponent == 8 for FlateDecode");
+	}
+	yak::windows::BMPHelper bh;
+	if(has_value_or_array(s.dic, name("ColorSpace"), name("DeviceRGB"))) {
+		bh.init_rgb(8, pr.resolve<int>(s.dic, name("Width")), pr.resolve<int>(s.dic, name("Height")));
+		std::string str;
+		yak::pdf::decoder::get_decoded_result(s, str);
+		bh.set_pixels_rgb(str.c_str());
+	} else {
+		OutputDebugString("Unsuppoted ColorSpace");
+		return;
+	}
+
+	int length = bh.size();
+	SPI_FILEINFO info = {
+		{ 'F', 'L', 'A', 'T' },
+		v1.size(),
+		length,
+		length
+	};
+	wsprintf(info.filename, "%08d.bmp", v1.size());
+	v1.push_back(info);
+	Data d1;
+	v2.push_back(d1);
+	v2.back().resize(length);
+	bh.write(&v2.back()[0], length);
+}
 
 static INT CreateArchiveInfo(
 	std::vector<SPI_FILEINFO> &v1,
@@ -60,19 +107,22 @@ static INT CreateArchiveInfo(
 					if(g_fDuplicate || !set.count(ref)) {
 						const stream &s = pr.get<stream>(ref);
 						if(has_value(s.dic, name("Type"), name("XObject")) && 
-						   has_value(s.dic, name("Subtype"), name("Image")) &&
-						   has_value_or_array(s.dic, name("Filter"), name("DCTDecode"))) {
-							int length = pr.resolve<int>(s.dic, name("Length"));
-							SPI_FILEINFO info = {
-								{ 'D', 'C', 'T' },
-								v1.size(),
-								length,
-								length
-							};
-							wsprintf(info.filename, "%08d.jpg", v1.size());
-							v1.push_back(info);
-							Data d1;
-							v2.push_back(d1); v2.back().assign(s.data.begin(), s.data.begin() + length);
+						   has_value(s.dic, name("Subtype"), name("Image"))) {
+							if(has_value_or_array(s.dic, name("Filter"), name("DCTDecode"))) {
+								int length = pr.resolve<int>(s.dic, name("Length"));
+								SPI_FILEINFO info = {
+									{ 'D', 'C', 'T' },
+									v1.size(),
+									length,
+									length
+								};
+								wsprintf(info.filename, "%08d.jpg", v1.size());
+								v1.push_back(info);
+								Data d1;
+								v2.push_back(d1); v2.back().assign(s.data.begin(), s.data.begin() + length);
+							} else if(has_value_or_array(s.dic, name("Filter"), name("FlateDecode"))) {
+								CreateArchiveInfo_FlateDecode(pr, s, v1, v2);
+							}
 						}
 						set.insert(ref);
 					}

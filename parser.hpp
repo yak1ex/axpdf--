@@ -166,7 +166,7 @@ namespace yak { namespace pdf {
 			dic_obj = lit("<<") >> *(name_obj >> object) >> lit(">>");
 			indirect_ref = int_ >> int_ >> lit('R');
 			null_obj = lit("null")[_val=null()];
-			stream %= dic_obj[_a=_1] >> lit("stream") >> no_skip[-lit('\r') >> lit('\n')] >> qi::lazy(boost::phoenix::if_else(has_valid_length(_a), stream_data(_a), stream_data_wo_length(_a)));
+			stream %= dic_obj[_a=_1] >> lit("stream") >> no_skip[-lit('\r') >> lit('\n')] >> no_skip[qi::lazy(boost::phoenix::if_else(has_valid_length(_a), stream_data(_a), stream_data_wo_length(_a)))];
 			// PDF specification states "There should be an end-of-line marker after the data and before endstream".
 			// However, PDF includeing stream without an end-of-line marker exists and Adobe Reader can display such a file.
 			stream_data = no_skip[qi::repeat(get_length(_r1))[qi::byte_]] >> -(lit('\r') || lit('\n')) >> lit("endstream");

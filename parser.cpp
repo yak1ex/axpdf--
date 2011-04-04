@@ -46,7 +46,8 @@ static void CreateArchiveInfo_FlateDecode(
 	// TODO: support just falling back to PNG
 
 	if(!has_value(s.dic, name("BitsPerComponent"), 8)) {
-		throw yak::pdf::unsupported_pdf("Not yet support unless BitsPerComponent == 8 for FlateDecode");
+		OutputDebugString("Unsuppoted BitsPerComponent");
+		return;
 	}
 	yak::windows::BMPHelper bh;
 	if(has_value_or_array(s.dic, name("ColorSpace"), name("DeviceRGB"))) {

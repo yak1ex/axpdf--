@@ -73,6 +73,17 @@ public:
 			palette[i].rgbReserved = 0;
 		}
 	}
+	void set_palette_bw(const void* p, int num_colors)
+	{
+		palette.resize(num_colors);
+		const unsigned char *v = static_cast<const unsigned char*>(p);
+		for(int i = 0; i < num_colors; ++i) {
+			palette[i].rgbRed      = v[i];
+			palette[i].rgbGreen    = v[i];
+			palette[i].rgbBlue     = v[i];
+			palette[i].rgbReserved = 0;
+		}
+	}
 	// NOTE: Assuming bit per components is 8
 	void set_pixels_rgb(const void* p);
 	void set_pixels_bw(const void* p);

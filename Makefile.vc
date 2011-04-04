@@ -20,38 +20,18 @@ LINK = $(LD) $(LDFLAGS) $(LIBS)
 RC = rc
 RESEXT = res
 
-AXPDF_OBJS = axpdf--.$(OBJEXT) parser.$(OBJEXT) decoder.$(OBJEXT) types_output.$(OBJEXT) bmp_helper.$(OBJEXT) odstream.$(OBJEXT) axpdf--.$(RESEXT)
+AXPDF_OBJS = axpdf--.$(OBJEXT) parser.$(OBJEXT) reader.$(OBJEXT) decoder.$(OBJEXT) types_output.$(OBJEXT) bmp_helper.$(OBJEXT) odstream.$(OBJEXT) axpdf--.$(RESEXT)
 
 axpdf--.spi: $(AXPDF_OBJS) axpdf--vc.def
 	$(LINK) -dll -out:$@ -def:axpdf--vc.def $(AXPDF_OBJS) User32.lib
 
 all: axpdf--.spi pdf.exe test.exe test2.exe test3.exe
 
-axpdf--.$(OBJEXT): axpdf--.cpp
-
-parser.$(OBJEXT): parser.cpp spirit_helper.hpp parser.hpp types.hpp types_output.hpp decoder.hpp
-
-odstream.$(OBJEXT): odstream.cpp odstream.hpp
-
-pdf.$(OBJEXT): pdf.cpp spirit_helper.hpp parser.hpp util.hpp types.hpp types_output.hpp decoder.hpp
-
-decoder.$(OBJEXT): decoder.cpp decoder.hpp types.hpp
-
-types_output.$(OBJEXT): types_output.cpp types_output.hpp decoder.hpp types.hpp
-
-bmp_helper.$(OBJEXT): bmp_helper.cpp bmp_helper.hpp
-
 pdf.exe: pdf.$(OBJEXT) decoder.$(OBJEXT) types_output.$(OBJEXT) 
-
-test.$(OBJEXT): test.cpp spirit_helper.hpp
 
 test.exe: test.$(OBJEXT)
 
-test2.$(OBJEXT): test2.cpp
-
 test2.exe: test2.$(OBJEXT)
-
-test3.$(OBJEXT): test3.cpp parser.hpp
 
 test3.exe: test3.$(OBJEXT) decoder.$(OBJEXT) types_output.$(OBJEXT)
 
@@ -66,3 +46,22 @@ test3.exe: test3.$(OBJEXT) decoder.$(OBJEXT) types_output.$(OBJEXT)
 
 clean:
 	del *.$(OBJEXT) *.$(RESEXT) *.lib *.exp *.pdb *.spi *.exe *.exe.stackdump
+
+# Dependencies by g++ -MM
+# TODO: Make target for maintainance
+
+axpdf--.$(OBJEXT): axpdf--.cpp Spi_api.h resource.h odstream.hpp
+bmp_helper.$(OBJEXT): bmp_helper.cpp bmp_helper.hpp
+decoder.$(OBJEXT): decoder.cpp decoder.hpp types.hpp
+odstream.$(OBJEXT): odstream.cpp odstream.hpp
+parser.$(OBJEXT): parser.cpp Spi_api.h spirit_helper.hpp types.hpp \
+  types_output.hpp decoder.hpp bmp_helper.hpp reader.hpp
+pdf.$(OBJEXT): pdf.cpp parser.hpp spirit_helper.hpp types.hpp \
+  types_output.hpp decoder.hpp
+reader.$(OBJEXT): reader.cpp reader.hpp types.hpp util.hpp parser.hpp \
+  spirit_helper.hpp types_output.hpp decoder.hpp
+test.$(OBJEXT): test.cpp spirit_helper.hpp
+test2.$(OBJEXT): test2.cpp
+test3.$(OBJEXT): test3.cpp parser.hpp spirit_helper.hpp types.hpp \
+  types_output.hpp decoder.hpp
+types_output.$(OBJEXT): types_output.cpp types_output.hpp types.hpp decoder.hpp

@@ -17,6 +17,7 @@
 #include <boost/variant/get.hpp>
 #include <boost/fusion/include/define_struct.hpp>
 #include <boost/fusion/include/std_pair.hpp>
+#include <boost/operators.hpp>
 
 #include <string>
 #include <vector>
@@ -42,7 +43,7 @@ namespace yak { namespace pdf {
 	{
 		return r1.number < r2.number || r1.number == r2.number && r1.generation < r2.generation;
 	}
-	struct name
+	struct name : boost::less_than_comparable<name, boost::equality_comparable<name> >
 	{
 		std::string value;
 		name() {}
@@ -61,15 +62,7 @@ namespace yak { namespace pdf {
 	{
 		return n1.value < n2.value;
 	}
-	inline std::ostream& operator<<(std::ostream& os, const name &n)
-	{
-		os << '/' << n.value; return os;
-	}
 	struct null {};
-	inline std::ostream& operator<<(std::ostream& os, const null &n)
-	{
-		os << "null"; return os;
-	}
 	struct stream;
 	typedef boost::make_recursive_variant<
 		bool, int, double, std::string, std::vector<char>, name,

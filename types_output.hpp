@@ -23,6 +23,14 @@
 
 namespace yak { namespace pdf {
 
+	inline std::ostream& operator<<(std::ostream& os, const name &n)
+	{
+		os << '/' << n.value; return os;
+	}
+	inline std::ostream& operator<<(std::ostream& os, const null &n)
+	{
+		os << "null"; return os;
+	}
 	struct output_visitor : public boost::static_visitor<>
 	{
 		static const int indent = 2;

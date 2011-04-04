@@ -17,9 +17,11 @@
 #include <set>
 #include <utility>
 
+#include <boost/foreach.hpp>
+
 #include "Spi_api.h"
 
-#include "parser.hpp"
+#include "reader.hpp"
 #include "decoder.hpp"
 #include "bmp_helper.hpp"
 
@@ -32,7 +34,7 @@ typedef std::pair<std::vector<SPI_FILEINFO>, std::vector<Data> > Value;
 bool g_fDuplicate;
 
 static void CreateArchiveInfo_FlateDecode(
-	const yak::pdf::pdf_reader<LPSTR> &pr,
+	const yak::pdf::pdf_reader &pr,
 	const yak::pdf::stream &s,
 	std::vector<SPI_FILEINFO> &v1,
 	std::vector<Data> &v2
@@ -103,7 +105,7 @@ static INT CreateArchiveInfo(
 	std::vector<SPI_FILEINFO> &v1,
 	std::vector<Data> &v2,
 	std::set<yak::pdf::indirect_ref> &set,
-	const yak::pdf::pdf_reader<LPSTR> &pr,
+	const yak::pdf::pdf_reader &pr,
 	const yak::pdf::dictionary &dic
 )
 {
@@ -123,7 +125,6 @@ static INT CreateArchiveInfo(
 		}
 	} else if(has_value(dic, name("Type"), name("Page"))) {
 		if(has_key(dic, name("Resources"))) {
-			std::cout << pr.resolve(dic, name("Resources")) << std::endl;
 			const dictionary &res = pr.resolve<dictionary>(dic, name("Resources"));
 			if(has_key(res, name("XObject"))) {
 				const dictionary & xobj = pr.resolve<dictionary>(res, name("XObject"));
@@ -162,7 +163,7 @@ static INT CreateArchiveInfo(
 
 void GetArchiveInfoImp_(std::vector<SPI_FILEINFO> &v1, std::vector<std::vector<char> > &v2, LPSTR first, LPSTR last)
 {
-	yak::pdf::pdf_reader<LPSTR> pr(first, last);
+	yak::pdf::pdf_reader pr(first, last);
 	if(yak::pdf::has_key(pr.get_trailer(), yak::pdf::name("Encrypt"))) {
 		throw yak::pdf::unsupported_pdf("Protected PDF is not supported.");
 	}

@@ -42,6 +42,10 @@ static void CreateArchiveInfo_FlateDecode(
 	using yak::pdf::get_value;
 	using yak::pdf::has_value_or_array;
 	using yak::pdf::name;
+	using yak::pdf::array;
+	using yak::pdf::stream;
+	using yak::pdf::is_type;
+	using yak::pdf::object;
 
 	// TODO: support just falling back to PNG
 
@@ -55,6 +59,26 @@ static void CreateArchiveInfo_FlateDecode(
 		std::string str;
 		yak::pdf::decoder::get_decoded_result(s, str);
 		bh.set_pixels_rgb(str.c_str());
+	} else if(has_key(s.dic, name("ColorSpace"))
+	          && is_type<array>(pr.resolve(s.dic, name("ColorSpace")))
+	          && pr.resolve<array>(s.dic, name("ColorSpace")).size() == 4
+	          && pr.resolve<name>(pr.resolve<array>(s.dic, name("ColorSpace"))[0]) == name("Indexed")) {
+		const array & ar = pr.resolve<array>(s.dic, name("ColorSpace"));
+		const object &obj = pr.resolve(ar[3]);
+		// TODO: shrink bits
+		bh.init_index(8, pr.resolve<int>(s.dic, name("Width")), pr.resolve<int>(s.dic, name("Height")));
+		// TODO: maybe Filter is used for palette
+		if(pr.resolve<name>(ar[1]) != name("DeviceRGB")) {
+			bh.set_palette_rgb(is_type<stream>(obj) ? &boost::get<stream>(obj).data[0] : &boost::get<std::vector<char> >(obj)[0], pr.resolve<int>(ar[2]) + 1);
+		} else if(pr.resolve<name>(ar[1]) != name("DeviceGray")) {
+			bh.set_palette_bw(is_type<stream>(obj) ? &boost::get<stream>(obj).data[0] : &boost::get<std::vector<char> >(obj)[0], pr.resolve<int>(ar[2]) + 1);
+		} else {
+			OutputDebugString("Not yet support Indexed colorspace with neither DeviceRGB nor DeviceGray");
+			return;
+		}
+		std::string str;
+		yak::pdf::decoder::get_decoded_result(s, str);
+		bh.set_pixels_bw(str.c_str());
 	} else {
 		OutputDebugString("Unsuppoted ColorSpace");
 		return;

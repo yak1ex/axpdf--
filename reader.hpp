@@ -77,6 +77,11 @@ namespace yak { namespace pdf {
 		{
 			return boost::get<T>(resolve(obj));
 		}
+		template<typename T>
+		const T& resolve(const object& obj, const T& def) const
+		{
+			return boost::get<T>(&resolve(obj)) ? boost::get<T>(resolve(obj)) : def;
+		}
 		const object& resolve(const dictionary& dic, const name &n) const
 		{
 			if(dic.count(n)) {
@@ -87,6 +92,11 @@ namespace yak { namespace pdf {
 		const T& resolve(const dictionary& dic, const name &n) const
 		{
 			return boost::get<T>(resolve(dic, n));
+		}
+		template<typename T>
+		const T& resolve(const dictionary& dic, const name &n, const T& def) const
+		{
+			return boost::get<T>(&resolve(dic, n)) ? boost::get<T>(resolve(dic, n)) : def;
 		}
 		const object& get(const indirect_ref& ref) const;
 		const object& get(int number, int generation = 0) const

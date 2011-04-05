@@ -101,12 +101,22 @@ void CreateArchiveInfo_FlateDecode(
 			const object &obj = pr.resolve(ar[3]);
 			// TODO: shrink bits
 			bh.init_index(pr.resolve(s.dic, name("BitsPerComponent"), 8), pr.resolve<int>(s.dic, name("Width")), pr.resolve<int>(s.dic, name("Height")));
-			// TODO: maybe Filter is used for palette
-			yak::debug::ods << cs2;
 			if(is_rgb(pr, cs2)) {
-				bh.set_index_rgb(is_type<stream>(obj) ? &boost::get<stream>(obj).data[0] : &boost::get<std::vector<char> >(obj)[0], pr.resolve<int>(ar[2]) + 1);
+				if(is_type<stream>(obj)) {
+					std::string d;
+					yak::pdf::decoder::get_decoded_result(boost::get<stream>(obj), d);
+					bh.set_index_rgb(&d[0], pr.resolve<int>(ar[2]) + 1);
+				} else {
+					bh.set_index_rgb(&boost::get<std::vector<char> >(obj)[0], pr.resolve<int>(ar[2]) + 1);
+				}
 			} else if(is_gray(pr, cs2)) {
-				bh.set_index_bw(is_type<stream>(obj) ? &boost::get<stream>(obj).data[0] : &boost::get<std::vector<char> >(obj)[0], pr.resolve<int>(ar[2]) + 1);
+				if(is_type<stream>(obj)) {
+					std::string d;
+					yak::pdf::decoder::get_decoded_result(boost::get<stream>(obj), d);
+					bh.set_index_bw(&d[0], pr.resolve<int>(ar[2]) + 1);
+				} else {
+					bh.set_index_bw(&boost::get<std::vector<char> >(obj)[0], pr.resolve<int>(ar[2]) + 1);
+				}
 			} else {
 				throw yak::pdf::unsupported_pdf("Unsupported colorspace is used for Indexed colorspace.");
 			}

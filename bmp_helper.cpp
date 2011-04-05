@@ -32,10 +32,10 @@ namespace {
 
 }
 
-namespace yak { namespace windows {
+namespace yak { namespace pdf {
 
 	// NOTE: Assuming bit per components is 8
-	void BMPHelper::set_pixels_rgb(const void* p)
+	void bmp_helper::set_pixels_rgb(const void* p)
 	{
 		const int stride_from = header.biWidth * header.biBitCount / 8, stride_to = stride;
 		const int height = header.biHeight;
@@ -54,7 +54,7 @@ namespace yak { namespace windows {
 		}
 	}
 
-	void BMPHelper::set_pixels_bw(const void* p)
+	void bmp_helper::set_pixels_bw_index(const void* p)
 	{
 		const int stride_from = normalize(header.biWidth * header.biBitCount, 8) / 8, stride_to = stride;
 		const int height = header.biHeight;
@@ -67,7 +67,7 @@ namespace yak { namespace windows {
 		}
 	}
 
-	void BMPHelper::write(const std::string &s)
+	void bmp_helper::write(const std::string &s)
 	{
 		fixup();
 		BITMAPFILEHEADER fileheader = {
@@ -86,7 +86,7 @@ namespace yak { namespace windows {
 		mywrite(ofs, &v[0], v.size());
 	}
 
-	void BMPHelper::write(void *p, std::size_t size_)
+	void bmp_helper::write(void *p, std::size_t size_)
 	{
 		if(size_ < size()) throw 1; // TODO: appropriate exception
 		fixup();

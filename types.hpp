@@ -71,6 +71,7 @@ namespace yak { namespace pdf {
 		indirect_ref, null, stream
 	>::type object;
 	typedef std::map<name, object> dictionary;
+	typedef std::vector<object> array;
 
 	enum xref_type {
 		XREF_FREE, XREF_USED, XREF_COMPRESSED
@@ -147,15 +148,36 @@ namespace yak { namespace pdf {
 			boost::get<T>(dic.find(n)->second) == t;
 	}
 	template<typename T>
+	inline bool is_value_or_array(const object &obj, const T& t)
+	{
+		return ((boost::get<T>(&obj) &&
+			  boost::get<T>(obj) == t) ||
+			 (boost::get<array>(&obj) &&
+			  boost::get<array>(obj).size() == 1 &&
+			  boost::get<T>(&boost::get<array>(obj)[0]) &&
+			  boost::get<T>(boost::get<array>(obj)[0]) == t));
+	}
+	template<typename T>
 	inline bool has_value_or_array(const dictionary &dic, const name &n, const T& t)
 	{
-		return dic.count(n) &&
-			((boost::get<T>(&dic.find(n)->second) &&
-			  boost::get<T>(dic.find(n)->second) == t) ||
-			 (boost::get<array>(&dic.find(n)->second) &&
-			  boost::get<array>(dic.find(n)->second).size() == 1 &&
-			  boost::get<T>(&boost::get<array>(dic.find(n)->second)[0]) &&
-			  boost::get<T>(boost::get<array>(dic.find(n)->second)[0]) == t));
+		return dic.count(n) && is_value_or_array(dic.find(n)->second, t);
+	}
+	template<typename T>
+	inline bool is_array_front(const object& obj, const T& t)
+	{
+		return
+			boost::get<array>(&obj) && 
+			boost::get<array>(obj).size() > 0 && 
+			boost::get<T>(&boost::get<array>(obj)[0]) &&
+			boost::get<T>(boost::get<array>(obj)[0]) == t;
+	}
+	template<typename T>
+	inline bool is_array_front(const array& arr, const T& t)
+	{
+		return
+			arr.size() > 0 && 
+			boost::get<T>(&arr[0]) &&
+			boost::get<T>(arr[0]) == t;
 	}
 	template<typename T>
 	inline const T& get_value(const dictionary &dic, const name &n)
@@ -175,7 +197,6 @@ namespace yak { namespace pdf {
 	{
 		return dic.count(n) != 0;
 	}
-	typedef std::vector<object> array;
 
 }}
 

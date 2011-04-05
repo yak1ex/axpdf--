@@ -17,6 +17,7 @@
 
 #include <iosfwd>
 #include <vector>
+#include <stdexcept>
 
 namespace yak { namespace pdf {
 
@@ -33,16 +34,18 @@ public:
 	// NOTE: Assuming bit per components is 8
 	void init_rgb(int bpc, int width, int height)
 	{
+		if(bpc != 8) throw std::range_error("Only BitsPerComponent == 8 is supported for DeviceRGB");
 		stride = normalize(normalize(width * bpc * 3, 8) / 8, 4); // 8 is bits/byte, 4 is alignment
 		v.resize(stride * height);
 
 		header.biWidth = width;
 		header.biHeight = height;
-		header.biBitCount = bpc * 3; // TODO: assertion
+		header.biBitCount = bpc * 3;
 		header.biSizeImage = stride * height;
 	}
 	void init_index(int bits, int width, int height)
 	{
+		if(bits != 1 && bits != 2 && bits != 4 && bits != 8) throw std::range_error("Unsupported BitsPerComponent");
 		stride = normalize(normalize(width * bits, 8) / 8, 4); // 8 is bits/byte, 4 is alignment
 		v.resize(stride * height);
 
@@ -61,7 +64,6 @@ public:
 			palette[i].rgbReserved = 0;
 		}
 	}
-	// NOTE: Assuming bit per components is 8
 	void set_index_rgb(const void* p, int num_colors)
 	{
 		palette.resize(num_colors);

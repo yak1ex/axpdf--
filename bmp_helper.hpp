@@ -18,12 +18,12 @@
 #include <iosfwd>
 #include <vector>
 
-namespace yak { namespace windows {
+namespace yak { namespace pdf {
 
-class BMPHelper
+class bmp_helper
 {
 public:
-	BMPHelper() {
+	bmp_helper() {
 		header.biSize = sizeof(BITMAPINFOHEADER);
 		header.biPlanes = 1;
 		header.biCompression = BI_RGB;
@@ -62,7 +62,7 @@ public:
 		}
 	}
 	// NOTE: Assuming bit per components is 8
-	void set_palette_rgb(const void* p, int num_colors)
+	void set_index_rgb(const void* p, int num_colors)
 	{
 		palette.resize(num_colors);
 		const unsigned char (*rgb)[3] = static_cast<const unsigned char(*)[3]>(p);
@@ -73,7 +73,7 @@ public:
 			palette[i].rgbReserved = 0;
 		}
 	}
-	void set_palette_bw(const void* p, int num_colors)
+	void set_index_bw(const void* p, int num_colors)
 	{
 		palette.resize(num_colors);
 		const unsigned char *v = static_cast<const unsigned char*>(p);
@@ -86,7 +86,7 @@ public:
 	}
 	// NOTE: Assuming bit per components is 8
 	void set_pixels_rgb(const void* p);
-	void set_pixels_bw(const void* p);
+	void set_pixels_bw_index(const void* p);
 	std::size_t size() const {
 		return sizeof(BITMAPFILEHEADER) + sizeof(header) + sizeof(RGBQUAD) * palette.size() + v.size();
 	}

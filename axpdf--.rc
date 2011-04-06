@@ -35,7 +35,7 @@ CAPTION "About axpdf--.spi"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,48,42,50,14
-    LTEXT           "axpdf--.spi  v0.01 (2011/04/02)",IDC_STATIC,4,7,116,10
+    LTEXT           "axpdf--.spi  v0.02 (2011/04/06)",IDC_STATIC,4,7,116,10
     LTEXT           "PDF as an image container plugin",IDC_STATIC,22,17,123,12
     LTEXT           "Written by Yak!",IDC_STATIC,22,28,62,12
 END
@@ -65,12 +65,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Yak!"
             VALUE "FileDescription", "axpdf--.spi - PDF as an image container plugin"
-            VALUE "FileVersion", "Ver 0.01 (2011/04/02)"
+            VALUE "FileVersion", "Ver 0.02 (2011/04/06)"
             VALUE "InternalName", "axpdf--.spi"
             VALUE "LegalCopyright", "Written by Yak!"
             VALUE "OriginalFilename", "axpdf--.spi"
             VALUE "ProductName", "axpdf--.spi"
-            VALUE "ProductVersion", "Ver 0.01 (2011/04/02)"
+            VALUE "ProductVersion", "Ver 0.02 (2011/04/06)"
         END
     END
     BLOCK "VarFileInfo"

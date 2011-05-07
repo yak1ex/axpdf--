@@ -55,7 +55,7 @@ dist:
 	-rm -rf source
 	mkdir disttemp
 	cp axpdf--.spi axpdf--.txt source.zip disttemp
-	(cd disttemp; strip axpdf--.spi; zip ../axpdf--$(VER).zip *)
+	(cd disttemp; zip ../axpdf--$(VER).zip *)
 	-rm -rf disttemp
 
 tag:

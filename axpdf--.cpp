@@ -50,7 +50,7 @@ int safe_strncpy(char *dest, const char *src, std::size_t n)
 
 const char* table[] = {
 	"00AM",
-	"PDF as an image container plugin - v0.02 (2011/04/06) Written by Yak!",
+	"PDF as an image container plugin - v0.03 (2011/05/07) Written by Yak!",
 	"*.pdf",
 	"PDFƒtƒ@ƒCƒ‹"
 };

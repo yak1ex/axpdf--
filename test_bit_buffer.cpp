@@ -3,7 +3,6 @@
 #include <boost/test/auto_unit_test.hpp>
 #include <boost/test/test_case_template.hpp>
 #include <boost/mpl/list.hpp>
-#include <boost/mpl/fold.hpp>
 #include <boost/mpl/reverse_fold.hpp>
 #include <boost/mpl/push_front.hpp>
 #include <boost/mpl/is_sequence.hpp>
@@ -26,7 +25,6 @@ using boost::mpl::int_;
 
 typedef boost::mpl::list<int_<1>, int_<2>, int_<3>, int_<4>, int_<5>, int_<6>, int_<7>, int_<8> > test_idx_types;
 
-using boost::mpl::fold;
 using boost::mpl::reverse_fold;
 using boost::mpl::push_front;
 using boost::mpl::is_sequence;
@@ -35,13 +33,13 @@ using namespace boost::mpl::placeholders;
 template<typename T, typename Seq, typename Init = boost::mpl::list<> >
 struct product_1_seq
 {
-	typedef typename fold<Seq, Init, push_front<_1, push_front<boost::mpl::if_<is_sequence<_2>, _2, push_front<boost::mpl::list<>, _2> >, T> > >::type type;
+	typedef typename reverse_fold<Seq, Init, push_front<_1, push_front<boost::mpl::if_<is_sequence<_2>, _2, push_front<boost::mpl::list<>, _2> >, T> > >::type type;
 };
 
 template<typename Seq1, typename Seq2, typename Init = boost::mpl::list<> >
 struct product_seq_seq
 {
-	typedef typename fold<Seq1, Init, product_1_seq<_2, Seq2, _1> >::type type;
+	typedef typename reverse_fold<Seq1, Init, product_1_seq<_2, Seq2, _1> >::type type;
 };
 
 template<typename Seq>

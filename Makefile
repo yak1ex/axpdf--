@@ -60,3 +60,12 @@ dist:
 
 tag:
 	git tag axpdf--$(VER)
+
+
+########################################################################
+
+test_bitbuffer.o: test_bitbuffer.cpp bit_buffer.hpp mpl_util.hpp
+test_mpl_util.o: test_mpl_util.cpp mpl_util.hpp
+
+testrunner: $(patsubst test_%.cpp,test_%.o,$(wildcard test_*.cpp))
+	$(CXX) $(CXXFLAGS) -o $@ $^

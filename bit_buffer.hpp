@@ -23,8 +23,8 @@ public:
 		
 		while(front_bits() < bits) {
 			u |= (mask<uu_type>(front_bits()) & buf.front()) << (bits - front_bits());
-			buf.pop_front();
 			bits -= front_bits();
+			buf.pop_front();
 			front_idx = 0;
 		}
 		u |= mask<uu_type>(bits) & (buf.front() >> (front_bits() - bits));
@@ -67,8 +67,9 @@ public:
 		return buf_type_bits * (buf.size() - 1) - front_idx + back_idx;
 	}
 private:
+	// TODO: prohibit signed integer
 	template<typename U>
-	U mask(int bits) { return (static_cast<U>(1) << bits) - 1; }
+	U mask(int bits) { return std::numeric_limits<U>::digits == bits ? -1 : (static_cast<U>(1) << bits) - 1; }
 	typedef typename boost::make_unsigned<T>::type buf_type;
 	static const std::size_t buf_type_bits = std::numeric_limits<buf_type>::digits;
 	boost::circular_buffer<buf_type> buf;
@@ -95,6 +96,7 @@ private:
 //                          ^back_idx
 
 	std::size_t front_idx, back_idx;
+	std::size_t front_avail_bits() { return buf.size() == 1 ? back_idx - front_idx : buf_type_bits - front_idx; }
 	std::size_t front_bits() { return buf_type_bits - front_idx; }
 };
 

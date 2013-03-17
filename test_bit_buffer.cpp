@@ -150,6 +150,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_32bit_rotate, T, product_type)
 	bit_buffer<test_type> buf;
 
 	for(int i=0; i<16; ++i) {
+		BOOST_TEST_MESSAGE("test_32bit_rotate with " << div << " sizeof(T) " << sizeof(test_type) << " : " << i);
 		BOOST_CHECK_EQUAL(buf.size(), 0);
 
 		buf.push(1, 1);

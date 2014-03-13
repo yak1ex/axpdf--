@@ -31,13 +31,13 @@ int main(int argc, char **argv)
 					std::cout << pfr.get_trailer();
 				} else if(token[0] == "raw") {
 					const yak::pdf::stream &s = pfr.get<yak::pdf::stream>(boost::lexical_cast<int>(token[1]));
-					std::ofstream ofs(token[2], std::ios::out | std::ios::binary);
+					std::ofstream ofs(token[2].c_str(), std::ios::out | std::ios::binary);
 					ofs.write(static_cast<const char*>(static_cast<const void*>(&s.data[0])), s.data.size());
 				} else if(token[0] == "decode") {
 					const yak::pdf::stream &s = pfr.get<yak::pdf::stream>(boost::lexical_cast<int>(token[1]));
 					std::string d;
 					yak::pdf::decoder::get_decoded_result(s, d);
-					std::ofstream ofs(token[2], std::ios::out | std::ios::binary);
+					std::ofstream ofs(token[2].c_str(), std::ios::out | std::ios::binary);
 					ofs.write(static_cast<const char*>(static_cast<const void*>(&d[0])), d.size());
 				} else if(token[0] == "help") {
 					std::cout << "end\nshow <number>\nroot\nxref\ntrailer\nraw <number> <outfile>\ndecode <number> <outfile>\nhelp" << std::endl;

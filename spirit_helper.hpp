@@ -39,6 +39,7 @@ namespace yak { namespace spirit {
 		template<typename A1, typename A2>
 		struct result { typedef void type; };
 		// string
+		// NOTE: non-templates preferred over templates
 		void operator()(std::string &s1, const std::string &s2) const
 		{
 			s1.append(s2);

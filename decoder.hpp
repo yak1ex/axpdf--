@@ -15,7 +15,7 @@
 
 #include <iosfwd>
 #include <vector>
-#include <utility>
+#include <memory> // auto_ptr
 #include <boost/iostreams/concepts.hpp> // input_filter
 #include <boost/iostreams/operations.hpp> // get, EOF, WOULD_BLOCK
 

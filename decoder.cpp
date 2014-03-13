@@ -48,7 +48,7 @@ namespace yak { namespace pdf { namespace decoder {
 		io::array_source as(&s.data[0], s.data.size());
 		pin->push(as);
 
-		return pin;
+		return std::auto_ptr<std::istream>(pin);
 	}
 
 	void get_decoded_result(const yak::pdf::stream &st, std::string &s)

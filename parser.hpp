@@ -252,13 +252,14 @@ namespace yak { namespace pdf {
 			using qi::int_;
 			using qi::char_;
 			using namespace qi::labels;
+			namespace phx = boost::phoenix;
 
 			xref = xref_stream | xref_section;
 
 			xref_stream = indirect_obj;
 			indirect_obj = int_ >> int_ >> lit("obj") >> object >> lit("endobj");
 
-			xref_section %= lit("xref") >> *xref_subsection[yak::spirit::append(boost::phoenix::at_c<0>(_val),_1)] >> trailer_dic;
+			xref_section %= lit("xref") >> *xref_subsection[phx::insert(phx::at_c<0>(_val), phx::begin(_1), phx::end(_1))] >> trailer_dic;
 			xref_subsection = qi::omit[int_[_a = _1] >> int_[_b = _1]] >> qi::repeat(_b)[xref_entry(_a)];
 			xref_entry = (int_ >> int_ >> char_)[_val=convert2xref_entry(_1, _2, _3, _r1)];
 			trailer_dic = lit("trailer") >> object;

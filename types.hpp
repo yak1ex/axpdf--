@@ -13,6 +13,7 @@
 #ifndef YAK_PDF_TYPES_HPP
 #define YAK_PDF_TYPES_HPP
 
+#include <boost/version.hpp>
 #include <boost/variant/recursive_variant.hpp>
 #include <boost/variant/get.hpp>
 #include <boost/fusion/include/define_struct.hpp>

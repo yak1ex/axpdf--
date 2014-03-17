@@ -11,6 +11,10 @@
 
 int main(int argc, char **argv)
 {
+	if(argc < 2) {
+		std::cout << "pdfshell <pdf_filename>" << std::endl;
+		return 1;
+	}
 	yak::pdf::pdf_file_reader pfr(argv[1]);
 	std::string s;
 	std::cout << "> " << std::flush;
@@ -22,6 +26,7 @@ int main(int argc, char **argv)
 			if(token.size() > 0) {
 				if(token[0] == "end") break;
 				if(token[0] == "show") {
+					if(token.size() < 2) throw std::runtime_error("show <number>: object number is required");
 					std::cout << pfr.get(boost::lexical_cast<int>(token[1]));
 				} else if(token[0] == "root") {
 					std::cout << pfr.get_root();
@@ -30,10 +35,12 @@ int main(int argc, char **argv)
 				} else if(token[0] == "trailer") {
 					std::cout << pfr.get_trailer();
 				} else if(token[0] == "raw") {
+					if(token.size() < 3) throw std::runtime_error("raw <number> <output_filename>: object number and output filename are required");
 					const yak::pdf::stream &s = pfr.get<yak::pdf::stream>(boost::lexical_cast<int>(token[1]));
 					std::ofstream ofs(token[2].c_str(), std::ios::out | std::ios::binary);
 					ofs.write(static_cast<const char*>(static_cast<const void*>(&s.data[0])), s.data.size());
 				} else if(token[0] == "decode") {
+					if(token.size() < 3) throw std::runtime_error("decode <number> <output_filename>: object number and output filename are required");
 					const yak::pdf::stream &s = pfr.get<yak::pdf::stream>(boost::lexical_cast<int>(token[1]));
 					std::string d;
 					yak::pdf::decoder::get_decoded_result(s, d);
